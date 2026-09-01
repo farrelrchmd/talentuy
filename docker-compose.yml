@@ -1,0 +1,56 @@
+# TalentPulse — setup satu perintah untuk pengembangan dan demo lokal.
+#
+#   cp .env.example .env
+#   docker compose up --build
+#   docker compose exec backend python -m app.seed --reset
+#
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: talentpulse-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-talentpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-talentpulse}
+      POSTGRES_DB: ${POSTGRES_DB:-talentpulse}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - talentpulse-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-talentpulse}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./apps/api
+    container_name: talentpulse-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-talentpulse}:${POSTGRES_PASSWORD:-talentpulse}@db:5432/${POSTGRES_DB:-talentpulse}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DATA_SOURCE_MODE: ${DATA_SOURCE_MODE:-demo}
+      # Token hanya dibaca di server; tidak pernah dikirim ke browser.
+      X_API_BEARER_TOKEN: ${X_API_BEARER_TOKEN:-}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-TalentPulse123!}
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    container_name: talentpulse-web
+    depends_on:
+      - backend
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+volumes:
+  talentpulse-db:

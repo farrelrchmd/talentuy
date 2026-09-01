@@ -1,0 +1,36 @@
+# Environment
+.env
+.env.local
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+*.db
+*.db-wal
+*.db-shm
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# Testing
+test-results/
+playwright-report/
+coverage/
+.playwright/
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.idea/
+
+# Konfigurasi editor bersama tetap di-commit agar setup sama untuk semua orang.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — ganti nilai di sini saat brand guideline resmi tersedia.
+ *
+ * Warna ditulis sebagai kanal RGB (tanpa fungsi rgb) agar Tailwind dapat
+ * menerapkan modifier opacity seperti bg-warning/10 pada token yang sama.
+ */
+:root {
+  --tp-canvas: 246 248 252;
+  --tp-surface: 255 255 255;
+  --tp-surface-muted: 249 250 251;
+  --tp-sidebar: 11 18 32;
+  --tp-sidebar-hover: 22 32 58;
+  --tp-primary: 37 99 235;
+  --tp-primary-soft: 238 244 255;
+  --tp-primary-strong: 29 78 216;
+  --tp-secondary: 6 182 212;
+  --tp-text: 17 24 39;
+  --tp-text-muted: 102 112 133;
+  --tp-border: 228 231 236;
+  --tp-positive: 22 163 74;
+  --tp-warning: 245 158 11;
+  --tp-negative: 220 38 38;
+  --tp-neutral: 100 116 139;
+
+  /*
+   * Varian gelap khusus TEKS. Warna dasar di atas dipakai untuk ikon, garis,
+   * dan latar bertingkat opacity; dipakai sebagai teks pada latar terang
+   * kontrasnya di bawah 4.5:1 (WCAG AA). Nilai berikut lolos AA baik di atas
+   * putih maupun di atas latar berwarna 10–12% dari warna yang sama.
+   */
+  --tp-positive-strong: 22 101 52;
+  --tp-warning-strong: 146 64 14;
+  --tp-negative-strong: 153 27 27;
+  --tp-neutral-strong: 71 85 105;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: rgb(var(--tp-canvas));
+    color: rgb(var(--tp-text));
+    font-feature-settings: "cv02", "cv03", "cv04";
+    /* Tidak boleh ada horizontal overflow yang tidak disengaja. */
+    overflow-x: hidden;
+  }
+
+  /* Angka KPI memakai tabular numerals agar kolom angka rata. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--tp-primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: rgb(var(--tp-primary-soft));
+  }
+}
+
+@layer components {
+  .tp-card {
+    @apply rounded-card border border-line bg-surface shadow-card;
+  }
+
+  .tp-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-ink;
+  }
+
+  .tp-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .tp-btn-primary {
+    @apply border-transparent bg-primary text-white hover:bg-primary-strong;
+  }
+
+  .tp-input {
+    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+
+  .tp-label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted;
+  }
+
+  .tp-skeleton {
+    @apply relative overflow-hidden rounded bg-line/60;
+  }
+
+  .tp-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.65),
+      transparent
+    );
+    animation: shimmer 1.4s infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Tabel lebar tetap dapat digulir di dalam wadahnya sendiri. */
+  .tp-scroll-x {
+    @apply -mx-1 overflow-x-auto px-1;
+    scrollbar-width: thin;
+  }
+}
+
+/* Cetak: sembunyikan navigasi agar laporan layar bisa dicetak rapi. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

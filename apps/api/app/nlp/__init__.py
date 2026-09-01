@@ -1,0 +1,1 @@
+"""Komponen NLP TalentPulse."""
