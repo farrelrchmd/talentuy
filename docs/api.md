@@ -60,7 +60,7 @@ Setiap response analitik memuat blok `meta`:
 | --- | --- | --- | --- |
 | GET | `/dashboard/overview` | viewer+ | KPI, deret volume, puncak, topik, sentimen per pekerjaan, heatmap, isu perhatian, pertanyaan teratas, keterbatasan |
 | GET | `/dashboard/trends` | viewer+ | `granularity=daily\|weekly`, `breakdown=topic\|job_role\|sentiment\|none` |
-| GET | `/dashboard/topics` | viewer+ | Ringkasan seluruh topik + kata kunci terkait + pertanyaan |
+| GET | `/dashboard/topics` | viewer+ | Ringkasan seluruh topik + `partitions` (kombinasi kategori isu × jenis pekerjaan: jumlah, porsi, pertanyaan, porsi negatif) + kata kunci terkait + pertanyaan |
 | GET | `/dashboard/topics/{slug}` | viewer+ | Detail satu topik: deret, sentimen, intent, pekerjaan, ringkasan usulan |
 | GET | `/dashboard/heatmap` | viewer+ | Matriks jenis pekerjaan × topik kekhawatiran |
 | GET | `/dashboard/questions` | viewer+ | Post ber-intent Pertanyaan (parameter `limit`) |
@@ -73,7 +73,26 @@ Setiap response analitik memuat blok `meta`:
 | --- | --- | --- | --- |
 | GET | `/posts` | viewer+ | `sort=relevance\|recent\|engagement`, `page`, `page_size` (5–100) |
 | GET | `/posts/{post_id}` | viewer+ | Detail satu post |
-| PATCH | `/posts/{post_id}/labels` | admin | Koreksi label manual (human-in-the-loop) |
+| PATCH | `/posts/{post_id}/labels` | admin | Koreksi label manual (human-in-the-loop); nilai label divalidasi terhadap taxonomy |
+| POST | `/posts/{post_id}/label-suggestions` | analyst+ | Usulan koreksi `{ "field", "suggested_label", "note" }`; menandai post `needs_review` dan mencatat audit `label.suggest` |
+
+Setiap post memuat `explanation`, yaitu dasar klasifikasi untuk keempat label
+(`topic`, `sentiment`, `intent`, `job_role`):
+
+```json
+{
+  "rule": "Kata kunci taxonomy topik \"Gaji dan Benefit\" paling banyak cocok (2 kata). ...",
+  "triggers": ["gaji", "umr"],
+  "corrected": false,
+  "auto_rule": ""
+}
+```
+
+Kata pemicu dicocokkan pada teks ternormalisasi, sehingga sebagian (mis. hasil
+ekspansi slang) tidak muncul persis pada teks asli. Saat admin mengoreksi label,
+`corrected` menjadi `true`, `rule` menyebut label sebelumnya, dan aturan otomatis
+semula disimpan di `auto_rule`. Post yang dianalisis sebelum kolom ini ada
+mengembalikan objek kosong sampai analisis ulang dijalankan.
 
 Nilai keyakinan model hanya dikirim untuk role analyst dan admin. Respons tidak
 pernah memuat identitas personal penulis; hanya `external_post_id` dan tautan.
@@ -115,10 +134,14 @@ Kunci grafik yang tersedia: `volume`, `topics`, `sentiment`, `job_roles`,
 | Method | Path | Role | Keterangan |
 | --- | --- | --- | --- |
 | GET | `/data/connectors` | viewer+ | Status connector dan mode data efektif |
-| GET | `/data/taxonomy` | viewer+ | Topik, jenis pekerjaan, intent, sentimen, bahasa, rumus engagement |
+| GET | `/data/taxonomy` | viewer+ | Topik, jenis pekerjaan (+ `job_role_codes`), intent, sentimen, bahasa, rumus engagement |
 | PATCH | `/data/topics/{id}` | admin | Ubah nama, deskripsi, warna, kata kunci, status aktif |
+| GET | `/data/keyword-presets` | viewer+ | Preset kata kunci per kategori isu (termasuk yang nonaktif) |
+| POST | `/data/keyword-presets` | admin | `{ topic_slug, label, query_text, sort_order, is_active }` |
+| PATCH/DELETE | `/data/keyword-presets/{id}` | admin | Ubah atau hapus preset; tercatat di audit log |
 | GET | `/data/quality` | viewer+ | Cakupan analisis, porsi belum terklasifikasi, perlu ditinjau |
 | POST | `/data/import` | admin | `multipart/form-data` berisi `file` (CSV/JSON, maks. 8 MB) |
+| POST | `/data/import-public-x` | admin | Impor satu post X publik dari body JSON `{ "url": "https://x.com/.../status/..." }` |
 | POST | `/data/fetch-live` | admin | Tarik post nyata via X API resmi: `query` (wajib), `days` (1–7), `max_results` (10–100) |
 | POST | `/data/seed` | admin | `count` (100–5000), `days` (7–365), `reset` |
 | POST | `/data/reanalyze` | admin | Jalankan ulang pipeline NLP untuk seluruh post |

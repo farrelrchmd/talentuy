@@ -11,7 +11,7 @@ struktur tabel basis data.
 | "Apakah naik atau turun dibanding periode lalu?" | Analisis Tren (`/tren`) |
 | "Isu apa saja yang muncul dan seputar apa?" | Eksplorasi Topik (`/topik`) |
 | "Apa yang sebenarnya mereka tulis?" | Pencarian Post (`/post`) |
-| "Bagaimana isu ini berkembang minggu depan?" | Pemantauan Tersimpan (`/pemantauan`) |
+| "Bagaimana isu ini berkembang minggu depan?" | Monitoring (`/monitoring`) |
 | "Apa yang saya laporkan ke atasan?" | Laporan Insight (`/laporan`) |
 | "Dari mana datanya dan seberapa bisa dipercaya?" | Data & Pengaturan (`/data`), Metodologi & Etika (`/metodologi`) |
 
@@ -43,7 +43,7 @@ pada layar lebih kecil sehingga konteks filter selalu terlihat.
 | Job role | Jenis pekerjaan |
 | Engagement score | Skor interaksi |
 | Peak detection | Lonjakan percakapan |
-| Saved query / monitor | Pemantauan tersimpan |
+| Saved query / monitor | Monitoring |
 | Insight status | Rekomendasi untuk Ditinjau → Sudah ditinjau → Disetujui |
 
 Angka yang tidak dapat dibandingkan ditulis **"Tidak dapat dibandingkan"**, bukan
@@ -77,7 +77,7 @@ untuk frasa. Pencarian berbasis identitas personal tidak disediakan.
 | Chaining | Kata kunci terkait, topik, dan jenis pekerjaan yang dapat diklik |
 | Browsing | Overview, grafik tren, kartu topik |
 | Differentiating | Filter global, pengurutan relevansi/waktu/engagement |
-| Monitoring | Pemantauan tersimpan, perbandingan periode, indikator perubahan |
+| Monitoring | Monitoring, perbandingan periode, indikator perubahan |
 | Extracting | Detail post, catatan peninjau, laporan, ekspor agregat |
 
 ## 6. Information Foraging Theory
@@ -102,7 +102,7 @@ Filter jenis pekerjaan "Staf Gudang" → Analisis Tren membandingkan dua periode
 Eksplorasi Topik melihat komposisi keluhan → susun laporan berisi grafik terpilih.
 
 **Flow C — Monitoring**
-Simpan query "Penipuan Lowongan" sebagai monitor → buka Pemantauan Tersimpan →
+Simpan query "Penipuan Lowongan" sebagai monitor → buka Monitoring →
 baca perubahan 7 hari → "Buka di dashboard" untuk menelusuri penyebabnya.
 
 ## 8. Peta URL
@@ -114,7 +114,7 @@ baca perubahan 7 hari → "Buka di dashboard" untuk menelusuri penyebabnya.
 | `/tren` | Analisis Tren | viewer+ |
 | `/topik` | Eksplorasi Topik | viewer+ |
 | `/post` | Pencarian Post | viewer+ |
-| `/pemantauan` | Pemantauan Tersimpan | viewer (baca), analyst+ (ubah) |
+| `/monitoring` | Monitoring | viewer (baca), analyst+ (ubah) |
 | `/laporan` | Laporan Insight | viewer (baca/ekspor), analyst+ (susun) |
 | `/data` | Data & Pengaturan | viewer (baca), admin (impor/taxonomy/audit) |
 | `/metodologi` | Metodologi & Etika | viewer+ |

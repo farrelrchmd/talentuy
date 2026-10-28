@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Literal
+
+DataType = Literal["all", "real", "demo", "twitterapi_io"]
 
 from fastapi import Query
 from sqlalchemy import Select, and_, select
@@ -21,6 +24,7 @@ DEFAULT_WINDOW_DAYS = 30
 class FilterSet:
     date_from: datetime
     date_to: datetime
+    data_type: DataType = "all"
     query_id: str | None = None
     job_roles: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
@@ -53,6 +57,7 @@ class FilterSet:
         return {
             "date_from": self.date_from.isoformat(),
             "date_to": self.date_to.isoformat(),
+            "data_type": self.data_type,
             "query_id": self.query_id,
             "job_roles": self.job_roles,
             "topics": self.topics,
@@ -76,6 +81,7 @@ def _start_of_day(value: datetime) -> datetime:
 def filter_params(
     date_from: datetime | None = Query(None, description="Awal periode (ISO 8601)"),
     date_to: datetime | None = Query(None, description="Akhir periode (ISO 8601)"),
+    data_type: DataType = Query("all"),
     query_id: str | None = Query(None, description="ID query/monitor tersimpan"),
     job_roles: list[str] = Query(default=[]),
     topics: list[str] = Query(default=[], description="Slug topik"),
@@ -96,6 +102,7 @@ def filter_params(
     return FilterSet(
         date_from=resolved_from,
         date_to=resolved_to,
+        data_type=data_type,
         query_id=query_id,
         job_roles=[v for v in job_roles if v],
         topics=[v for v in topics if v],
@@ -166,6 +173,13 @@ def base_conditions(
         Post.created_at_source >= (date_from or filters.date_from),
         Post.created_at_source <= (date_to or filters.date_to),
     ]
+
+    if filters.data_type in ("real", "twitterapi_io"):
+        conditions.append(Post.is_synthetic.is_(False))
+    elif filters.data_type == "demo":
+        conditions.append(Post.is_synthetic.is_(True))
+    if filters.data_type == "twitterapi_io":
+        conditions.append(Post.source == "twitterapi_io")
 
     if filters.job_roles:
         conditions.append(PostAnalysis.job_role.in_(filters.job_roles))

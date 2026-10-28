@@ -202,6 +202,7 @@ export default function ReportPage() {
         notes: reportNotes,
         query_snapshot: {
           q: filters.q,
+          data_type: filters.data_type ?? "all",
           query_id: filters.query_id,
           job_roles: filters.job_roles,
           topics: filters.topics,
@@ -227,7 +228,7 @@ export default function ReportPage() {
     try {
       await downloadFile(
         `/reports/${id}/export?format=${format}`,
-        `talentpulse-laporan.${format === "pdf" ? "pdf" : "csv"}`,
+        `tid-laporan.${format === "pdf" ? "pdf" : "csv"}`,
       );
       setToast({ message: "Berkas ekspor diunduh.", tone: "success" });
     } catch (caught) {

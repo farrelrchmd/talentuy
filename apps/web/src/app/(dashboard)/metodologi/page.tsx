@@ -20,7 +20,8 @@ const ELLIS_STAGES: Array<{ stage: string; need: string; feature: string }> = [
   {
     stage: "Starting",
     need: "Memulai pencarian tanpa menyusun query yang rumit",
-    feature: "Preset topik dan contoh query pada pencarian global (Ctrl + K)",
+    feature:
+      "Preset kata kunci per kategori isu di Pencarian Post, serta preset topik pada pencarian global (Ctrl + K)",
   },
   {
     stage: "Chaining",
@@ -40,12 +41,13 @@ const ELLIS_STAGES: Array<{ stage: string; need: string; feature: string }> = [
   {
     stage: "Monitoring",
     need: "Mengikuti perubahan isu tertentu",
-    feature: "Pemantauan tersimpan dan perbandingan antar periode",
+    feature: "Monitoring dan perbandingan antar periode",
   },
   {
     stage: "Extracting",
     need: "Mengambil informasi untuk digunakan",
-    feature: "Detail post, catatan peninjau, dan ekspor laporan agregat",
+    feature:
+      "Detail post beserta dasar klasifikasi tiap label, catatan peninjau, dan ekspor laporan agregat",
   },
 ];
 
@@ -57,7 +59,8 @@ const FORAGING_CONCEPTS: Array<{ concept: string; application: string }> = [
   },
   {
     concept: "Information patch",
-    application: "Percakapan dikelompokkan menjadi topik, jenis pekerjaan, dan periode.",
+    application:
+      "Percakapan dikelompokkan menjadi kombinasi kategori isu × jenis pekerjaan (SPG/SPB, Staf Gudang, Kasir, Administrasi, Pengemudi) pada periode tertentu.",
   },
   {
     concept: "Cost of information",
@@ -87,7 +90,7 @@ const READING_TIPS: Array<{ title: string; body: string }> = [
   },
   {
     title: "Sentimen adalah konteks, bukan vonis",
-    body: "Label sentimen berasal dari model baseline berbasis leksikon. Post dengan keyakinan rendah diberi label “Tidak Yakin” dan ditandai perlu ditinjau.",
+    body: "Label sentimen berasal dari model baseline berbasis leksikon. Post dengan keyakinan rendah diberi label “Tidak Yakin” dan ditandai perlu ditinjau. Detail post menampilkan aturan dan kata pemicu setiap label agar ketepatannya dapat dinilai.",
   },
   {
     title: "Lonjakan bukan otomatis masalah",
@@ -189,7 +192,7 @@ export default function MethodologyPage() {
               ))}
             </ul>
             <p className="mt-3 rounded-lg border border-warning/25 bg-warning/5 px-3 py-2 text-[11px] leading-relaxed text-ink">
-              TalentPulse adalah media informasi pendukung komunikasi rekrutmen. Produk ini
+              TID (Talent Intelegence Dashboard) adalah media informasi pendukung komunikasi rekrutmen. Produk ini
               bukan sistem seleksi, bukan alat penilaian kandidat, dan tidak berafiliasi
               resmi dengan X.
             </p>
@@ -231,7 +234,7 @@ export default function MethodologyPage() {
         <div className="tp-scroll-x">
           <table className="w-full min-w-[640px] text-xs">
             <caption className="sr-only">
-              Pemetaan tahap Ellis terhadap fitur TalentPulse
+              Pemetaan tahap Ellis terhadap fitur TID
             </caption>
             <thead>
               <tr className="border-b border-line text-left text-muted">

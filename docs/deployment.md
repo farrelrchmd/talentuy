@@ -87,7 +87,7 @@ Checklist sebelum rilis:
 - [ ] `/health` dipantau (`status: ok` dan `database.connected: true`).
 - [ ] Log aplikasi dikumpulkan; audit log direview berkala.
 
-## 6. Pemantauan operasional
+## 6. monitoring operasional
 
 | Endpoint/Tempat | Dipakai untuk |
 | --- | --- |

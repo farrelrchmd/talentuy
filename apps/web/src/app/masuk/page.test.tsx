@@ -70,7 +70,7 @@ describe("halaman masuk", () => {
     await userEvent.type(screen.getByLabelText("Kata sandi"), "TalentPulse123!");
     await userEvent.click(screen.getByRole("button", { name: "Masuk" }));
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/ringkasan"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
     expect(login).toHaveBeenCalledWith("analyst@talentpulse.local", "TalentPulse123!");
   });
 

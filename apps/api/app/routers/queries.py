@@ -1,4 +1,4 @@
-"""CRUD query tersimpan dan monitor (Pemantauan Tersimpan)."""
+"""CRUD query tersimpan dan monitor (Monitoring)."""
 
 from __future__ import annotations
 

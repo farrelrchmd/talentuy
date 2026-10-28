@@ -9,11 +9,11 @@ import { ensureApiReady, login, openPage } from "./helpers";
  * navigasi keyboard, focus trap drawer, dan alternatif tabel untuk grafik.
  */
 const PAGES = [
-  { path: "/ringkasan", heading: "Ringkasan Percakapan Kandidat" },
+  { path: "/", heading: "Ringkasan Percakapan Kandidat" },
   { path: "/tren", heading: "Analisis Tren" },
   { path: "/topik", heading: "Eksplorasi Topik" },
   { path: "/post", heading: "Pencarian Post" },
-  { path: "/pemantauan", heading: "Pemantauan Tersimpan" },
+  { path: "/monitoring", heading: "Monitoring" },
   { path: "/laporan", heading: "Laporan Insight" },
   { path: "/data", heading: "Data & Pengaturan" },
   { path: "/metodologi", heading: "Metodologi & Etika Data" },
@@ -59,7 +59,7 @@ test("seluruh halaman dashboard bebas pelanggaran WCAG 2.1 AA", async ({ page })
 
 test("dashboard dapat dioperasikan dengan keyboard", async ({ page }) => {
   await login(page, "analyst");
-  await page.goto("/ringkasan"); // muat penuh: uji urutan Tab dari awal dokumen
+  await page.goto("/"); // muat penuh: uji urutan Tab dari awal dokumen
 
   // Tautan lewati navigasi harus menjadi target Tab pertama.
   await page.keyboard.press("Tab");

@@ -22,6 +22,7 @@ from app.models import (
     AuditLog,
     IngestionRun,
     Insight,
+    KeywordPreset,
     Monitor,
     Post,
     PostAnalysis,
@@ -32,7 +33,7 @@ from app.models import (
     User,
 )
 from app.security import hash_password
-from app.taxonomy import TOPIC_SEED
+from app.taxonomy import KEYWORD_PRESET_SEED, TOPIC_SEED
 
 DEMO_USERS = [
     ("Rani Prameswari", "admin@talentpulse.local", "admin"),
@@ -52,7 +53,7 @@ PRESET_QUERIES: list[dict] = [
     },
     {
         "name": "Penipuan Lowongan",
-        "query_text": "penipuan OR loker palsu OR pungli",
+        "query_text": 'penipuan OR "loker palsu" OR pungli OR "biaya rekrutmen" OR "alih daya fungsi" OR lowongan',
         "include_keywords": ["penipuan", "loker palsu"],
         "exclude_keywords": [],
         "job_roles": [],
@@ -92,7 +93,7 @@ def create_schema() -> None:
 def reset_data(db: Session) -> None:
     for model in (
         UsabilityEvent, AuditLog, Report, Insight, Monitor, IngestionRun,
-        PostAnalysis, Post, SourceQuery, Topic, User,
+        PostAnalysis, Post, SourceQuery, KeywordPreset, Topic, User,
     ):
         db.execute(delete(model))
     db.commit()
@@ -113,6 +114,23 @@ def seed_topics(db: Session) -> None:
                 is_active=True,
             )
         )
+    db.commit()
+
+
+def seed_keyword_presets(db: Session) -> None:
+    # Hanya mengisi topik yang belum punya preset agar suntingan admin tidak tertimpa.
+    topics = {t.slug: t for t in db.scalars(select(Topic))}
+    covered = set(db.scalars(select(KeywordPreset.topic_id).distinct()))
+    for slug, presets in KEYWORD_PRESET_SEED.items():
+        topic = topics.get(slug)
+        if topic is None or topic.id in covered:
+            continue
+        for order, (label, query_text) in enumerate(presets):
+            db.add(
+                KeywordPreset(
+                    topic_id=topic.id, label=label, query_text=query_text, sort_order=order
+                )
+            )
     db.commit()
 
 
@@ -197,6 +215,7 @@ def run_seed(reset: bool = False, count: int | None = None, days: int | None = N
         if reset:
             reset_data(db)
         seed_topics(db)
+        seed_keyword_presets(db)
         users = seed_users(db)
         queries = seed_queries(db, users["analyst"])
         seed_monitors(db, queries, users["analyst"])

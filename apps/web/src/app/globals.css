@@ -9,7 +9,7 @@
  * menerapkan modifier opacity seperti bg-warning/10 pada token yang sama.
  */
 :root {
-  --tp-canvas: 246 248 252;
+  --tp-canvas: 245 247 251;
   --tp-surface: 255 255 255;
   --tp-surface-muted: 249 250 251;
   --tp-sidebar: 11 18 32;
@@ -69,8 +69,73 @@
 }
 
 @layer components {
+  .tp-sidebar {
+    background: linear-gradient(165deg, #14263f 0%, #0d192c 60%, #101f36 100%);
+  }
+
+  .tp-login-panel {
+    background: radial-gradient(ellipse at top left, #d9e9ff, transparent 65%), linear-gradient(145deg, #f2f7ff, #eef2fb);
+  }
+
+  .tp-workspace {
+    padding: clamp(18px, 2.2vw, 32px);
+    container-type: inline-size;
+  }
+
+  .tp-page {
+    animation: workspace-enter 180ms ease-out;
+  }
+
+  .tp-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .tp-metric {
+    background-color: rgb(var(--tp-surface));
+    border: 1px solid rgb(var(--tp-border) / 0.8);
+    border-radius: 16px;
+    box-shadow: 0 3px 14px rgb(15 23 42 / 0.035);
+    min-height: 178px;
+  }
+
+  .tp-metric-emphasis {
+    background: linear-gradient(125deg, #172e52, #234775);
+    border-color: #294b79;
+    color: white;
+  }
+
+  .tp-metric-emphasis .text-ink { color: white; }
+  .tp-metric-emphasis .text-muted { color: #c0cee0; }
+  .tp-metric-emphasis .text-primary { color: #93c5fd; }
+  .tp-metric-emphasis .text-positive-strong { color: #86efac; }
+  .tp-metric-emphasis .text-negative-strong { color: #fda4af; }
+
+  @container (max-width: 339px) {
+    .tp-metrics { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @container (min-width: 580px) {
+    .tp-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @container (min-width: 1400px) {
+    .tp-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  }
+
+  @container (min-width: 860px) {
+    .tp-overview-grid { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
+  }
+
+  @keyframes workspace-enter {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .tp-card {
-    @apply rounded-card border border-line bg-surface shadow-card;
+    @apply rounded-card border border-line/60 bg-surface;
+    box-shadow: 0 3px 16px rgb(15 23 42 / 0.025);
   }
 
   .tp-chip {
@@ -78,15 +143,16 @@
   }
 
   .tp-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .tp-btn-primary {
     @apply border-transparent bg-primary text-white hover:bg-primary-strong;
+    box-shadow: 0 3px 8px rgb(var(--tp-primary) / 0.16);
   }
 
   .tp-input {
-    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
   }
 
   .tp-label {
@@ -121,6 +187,15 @@
   .tp-scroll-x {
     @apply -mx-1 overflow-x-auto px-1;
     scrollbar-width: thin;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

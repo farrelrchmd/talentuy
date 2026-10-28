@@ -292,6 +292,65 @@ def concern_heatmap(db: Session, filters: FilterSet) -> dict:
     return {"rows": roles, "columns": topics, "cells": matrix, "max_count": max_count}
 
 
+def topic_role_partitions(db: Session, filters: FilterSet) -> list[dict]:
+    """Kartu per kombinasi kategori isu x jenis pekerjaan (*information patches*)."""
+    stmt = filtered_query(
+        filters,
+        db,
+        Topic.slug,
+        Topic.name,
+        Topic.color,
+        PostAnalysis.job_role,
+        PostAnalysis.sentiment_label,
+        PostAnalysis.intent_label,
+        func.count(Post.id),
+    ).join(Topic, Topic.id == PostAnalysis.topic_id)
+    rows = db.execute(
+        stmt.group_by(
+            Topic.slug,
+            Topic.name,
+            Topic.color,
+            PostAnalysis.job_role,
+            PostAnalysis.sentiment_label,
+            PostAnalysis.intent_label,
+        )
+    ).all()
+
+    cells: dict[tuple[str, str], dict] = {}
+    for slug, name, color, role, sentiment, intent, count in rows:
+        cell = cells.setdefault(
+            (slug, role),
+            {
+                "topic_slug": slug,
+                "topic_name": name,
+                "color": color,
+                "job_role": role,
+                "count": 0,
+                "negative": 0,
+                "questions": 0,
+            },
+        )
+        cell["count"] += int(count)
+        if sentiment == "Negatif":
+            cell["negative"] += int(count)
+        if intent == "Pertanyaan":
+            cell["questions"] += int(count)
+
+    total = sum(c["count"] for c in cells.values())
+    output = []
+    for cell in cells.values():
+        negative = cell.pop("negative")
+        output.append(
+            {
+                **cell,
+                "share": share_percent(cell["count"], total),
+                "negative_share": share_percent(negative, cell["count"]),
+            }
+        )
+    output.sort(key=lambda item: (-item["count"], item["topic_name"], item["job_role"]))
+    return output
+
+
 def top_questions(db: Session, filters: FilterSet, limit: int = 10) -> list[dict]:
     """Post ber-intent Pertanyaan, diurutkan relevansi lalu engagement."""
     stmt = filtered_query(

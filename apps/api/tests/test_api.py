@@ -297,6 +297,56 @@ def test_import_requires_admin(client, analyst_headers):
     assert response.status_code == 403
 
 
+def test_import_public_x_validates_url(client, admin_headers):
+    response = client.post(
+        "/data/import-public-x",
+        headers=admin_headers,
+        json={"url": "https://example.com/user/status/1234567890"},
+    )
+    assert response.status_code == 422
+    assert "x.com atau twitter.com" in response.json()["detail"]
+
+
+def test_import_public_x_ingests_real_post(client, admin_headers, db, monkeypatch):
+    from sqlalchemy import select
+
+    from app.connectors.base import RawPost
+    from app.connectors.x_public_embed import XPublicEmbedConnector
+    from app.models import Post
+
+    sample = RawPost(
+        external_post_id="1566952453937205248",
+        text="Baru dapat offering letter, tetapi gaji yang ditawarkan 5 juta.",
+        created_at_source=datetime(2022, 9, 6),
+        language="id",
+        author_public_id="hrdbacot",
+        url="https://x.com/hrdbacot/status/1566952453937205248",
+        is_synthetic=False,
+        source="x_public_embed",
+    )
+    monkeypatch.setattr(XPublicEmbedConnector, "fetch", lambda self, **kwargs: [sample])
+
+    try:
+        response = client.post(
+            "/data/import-public-x",
+            headers=admin_headers,
+            json={"url": sample.url},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["records_processed"] == 1
+
+        post = db.scalar(select(Post).where(Post.external_post_id == sample.external_post_id))
+        assert post is not None
+        assert post.source == "x_public_embed"
+        assert post.is_synthetic is False
+        assert post.analysis is not None
+    finally:
+        post = db.scalar(select(Post).where(Post.external_post_id == sample.external_post_id))
+        if post is not None:
+            db.delete(post)
+            db.commit()
+
+
 def test_fetch_live_requires_admin(client, analyst_headers):
     response = client.post(
         "/data/fetch-live", params={"query": "loker gudang"}, headers=analyst_headers
@@ -390,6 +440,118 @@ def test_label_correction_rejects_unknown_topic(client, admin_headers, analyst_h
         f"/posts/{post['id']}/labels", headers=admin_headers, json={"topic_slug": "tidak-ada"}
     )
     assert response.status_code == 422
+
+
+def test_post_detail_returns_classification_basis(client, viewer_headers):
+    post = client.get("/posts", headers=viewer_headers, params={"page_size": 5}).json()["items"][0]
+    detail = client.get(f"/posts/{post['id']}", headers=viewer_headers).json()
+    assert set(detail["explanation"]) == {"topic", "sentiment", "intent", "job_role"}
+    assert all(entry["rule"] for entry in detail["explanation"].values())
+
+
+def test_label_correction_records_previous_rule(client, admin_headers, analyst_headers):
+    post = client.get("/posts", headers=analyst_headers, params={"page_size": 5}).json()["items"][1]
+    auto_rule = post["explanation"]["job_role"]["rule"]
+    response = client.patch(
+        f"/posts/{post['id']}/labels", headers=admin_headers, json={"job_role": "Kasir"}
+    )
+    assert response.status_code == 200
+
+    entry = client.get(f"/posts/{post['id']}", headers=analyst_headers).json()["explanation"][
+        "job_role"
+    ]
+    assert entry["corrected"] is True
+    assert entry["auto_rule"] == auto_rule
+    assert post["job_role"] in entry["rule"]
+
+
+def test_label_correction_rejects_unknown_job_role(client, admin_headers, analyst_headers):
+    post = client.get("/posts", headers=analyst_headers, params={"page_size": 5}).json()["items"][0]
+    response = client.patch(
+        f"/posts/{post['id']}/labels", headers=admin_headers, json={"job_role": "Operator"}
+    )
+    assert response.status_code == 422
+
+
+def test_label_suggestion_flags_post_for_review(
+    client, admin_headers, analyst_headers, viewer_headers
+):
+    post = client.get("/posts", headers=analyst_headers, params={"page_size": 5}).json()["items"][2]
+    body = {"field": "topic", "suggested_label": "Proses Melamar", "note": "soal interview"}
+
+    denied = client.post(
+        f"/posts/{post['id']}/label-suggestions", headers=viewer_headers, json=body
+    )
+    assert denied.status_code == 403
+
+    response = client.post(
+        f"/posts/{post['id']}/label-suggestions", headers=analyst_headers, json=body
+    )
+    assert response.status_code == 201
+    assert client.get(f"/posts/{post['id']}", headers=analyst_headers).json()["needs_review"]
+
+    audit = client.get("/data/audit", headers=admin_headers).json()["items"]
+    assert any(e["action"] == "label.suggest" and e["entity_id"] == post["id"] for e in audit)
+
+
+def test_keyword_presets_seeded_for_every_topic(client, viewer_headers):
+    presets = client.get("/data/keyword-presets", headers=viewer_headers).json()
+    topics = client.get("/data/taxonomy", headers=viewer_headers).json()["topics"]
+    assert {p["topic_slug"] for p in presets} == {t["slug"] for t in topics}
+    assert all(p["query_text"] for p in presets)
+
+
+def test_keyword_preset_query_returns_posts(client, viewer_headers):
+    preset = client.get("/data/keyword-presets", headers=viewer_headers).json()[0]
+    result = client.get("/posts", headers=viewer_headers, params={"q": preset["query_text"]})
+    assert result.status_code == 200
+    assert result.json()["total"] > 0
+
+
+def test_keyword_preset_crud_is_admin_only(client, admin_headers, analyst_headers):
+    body = {"topic_slug": "gaji-benefit", "label": "Uji preset", "query_text": "bonus OR insentif"}
+    assert (
+        client.post("/data/keyword-presets", headers=analyst_headers, json=body).status_code
+        == 403
+    )
+
+    created = client.post("/data/keyword-presets", headers=admin_headers, json=body)
+    assert created.status_code == 201
+    preset_id = created.json()["id"]
+
+    updated = client.patch(
+        f"/data/keyword-presets/{preset_id}",
+        headers=admin_headers,
+        json={"label": "Bonus dan insentif", "topic_slug": "kontrak-status"},
+    ).json()
+    assert updated["label"] == "Bonus dan insentif"
+    assert updated["topic_slug"] == "kontrak-status"
+
+    bad = client.post(
+        "/data/keyword-presets", headers=admin_headers, json={**body, "topic_slug": "tidak-ada"}
+    )
+    assert bad.status_code == 422
+
+    assert (
+        client.delete(f"/data/keyword-presets/{preset_id}", headers=admin_headers).status_code
+        == 204
+    )
+    actions = {e["action"] for e in client.get("/data/audit", headers=admin_headers).json()["items"]}
+    assert {"preset.create", "preset.update", "preset.delete"} <= actions
+
+
+def test_topics_expose_topic_by_role_partitions(client, analyst_headers):
+    body = client.get("/dashboard/topics", headers=analyst_headers).json()
+    partitions = body["partitions"]
+    assert partitions
+    assert sum(p["count"] for p in partitions) == body["total_posts"]
+    first = partitions[0]
+    drilled = client.get(
+        "/posts",
+        headers=analyst_headers,
+        params={"topics": [first["topic_slug"]], "job_roles": [first["job_role"]]},
+    ).json()
+    assert drilled["total"] == first["count"]
 
 
 def test_methodology_exposes_limitations(client):

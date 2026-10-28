@@ -3,6 +3,7 @@
 import {
   Activity,
   BarChart3,
+  CalendarDays,
   BookOpen,
   ChevronLeft,
   Database,
@@ -22,9 +23,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useFilters } from "@/hooks/useFilters";
+import { BrandMark } from "@/components/brand-mark";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/cn";
 import { formatDate, formatRelative } from "@/lib/format";
+import { filtersToSearchParams } from "@/lib/filters";
 import type { ResponseMeta, Role } from "@/lib/types";
 
 export interface NavItem {
@@ -33,15 +36,18 @@ export interface NavItem {
   icon: typeof LayoutDashboard;
   description: string;
   minRole?: Role;
+  section?: string;
 }
 
+export const HOME_ITEM: NavItem = {
+  href: "/",
+  label: "Beranda",
+  icon: LayoutDashboard,
+  description: "Ringkasan percakapan kandidat pada periode aktif",
+};
+
+// Ubah label untuk mengganti nama menu; href menentukan alamat halaman.
 export const NAV_ITEMS: NavItem[] = [
-  {
-    href: "/ringkasan",
-    label: "Overview",
-    icon: LayoutDashboard,
-    description: "Ringkasan percakapan kandidat pada periode aktif",
-  },
   {
     href: "/tren",
     label: "Analisis Tren",
@@ -61,8 +67,9 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Cari post sebagai konteks percakapan",
   },
   {
-    href: "/pemantauan",
-    label: "Pemantauan Tersimpan",
+    href: "/monitoring",
+    label: "Monitoring",
+    section: "Pantau & laporkan",
     icon: BarChart3,
     description: "Query tersimpan dan perbandingan periode",
   },
@@ -75,6 +82,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     href: "/data",
     label: "Data & Pengaturan",
+    section: "Kelola & pahami",
     icon: Database,
     description: "Sumber data, taxonomy, dan kualitas data",
   },
@@ -100,29 +108,35 @@ export function Sidebar({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const { filters } = useFilters();
+  const filterQuery = filtersToSearchParams(filters).toString();
 
-  const content = (
+  const content = (collapsed: boolean) => (
     <nav
-      className="flex h-full flex-col bg-sidebar text-slate-300"
+      className="tp-sidebar flex h-full flex-col text-slate-300"
       aria-label="Navigasi utama"
     >
-      <div className="flex items-center justify-between px-4 py-4">
+      <div className={cn("flex items-center justify-between gap-3 px-5 py-7", collapsed && "flex-col px-2")}>
         <Link
-          href="/ringkasan"
+          href={filterQuery ? `/?${filterQuery}` : "/"}
+          aria-label="TID - Beranda"
+          title="Beranda"
+          aria-current={pathname === "/" ? "page" : undefined}
           className="flex items-center gap-2.5 text-white"
           onClick={onCloseMobile}
         >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-sm font-bold">
-            TP
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-400/15 text-blue-300">
+            <BrandMark className="h-6 w-6" />
           </span>
           {!collapsed && (
-            <span className="text-[15px] font-semibold tracking-tight">TalentPulse</span>
+            <span className="text-2xl font-semibold tracking-[-0.04em]">TID<span className="mt-1 block text-[10px] font-normal leading-relaxed tracking-normal text-slate-400">Talent Intelegence<br />Dashboard</span></span>
           )}
         </Link>
         <button
           type="button"
           onClick={onToggle}
-          className="hidden rounded-md p-1.5 text-slate-400 transition hover:bg-sidebar-hover hover:text-white lg:block"
+          className="hidden rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white lg:block"
           aria-label={collapsed ? "Lebarkan menu samping" : "Ciutkan menu samping"}
         >
           {collapsed ? (
@@ -134,32 +148,45 @@ export function Sidebar({
         <button
           type="button"
           onClick={onCloseMobile}
-          className="rounded-md p-1.5 text-slate-400 transition hover:text-white lg:hidden"
+          className="rounded-lg p-1.5 text-slate-400 transition hover:text-white lg:hidden"
           aria-label="Tutup menu"
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
 
-      <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
+      {!collapsed && (
+        <div className="mx-4 mb-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-200 text-blue-900"><Shapes className="h-5 w-5" aria-hidden /></span>
+          <div className="min-w-0"><p className="text-[10px] text-slate-400">Workspace</p><p className="truncate text-xs font-medium text-white">Talent Intelligence</p></div>
+        </div>
+      )}
+      {!collapsed && <p className="px-6 pb-3 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">Ruang analisis</p>}
+      <ul className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {NAV_ITEMS.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <li key={item.href}>
+              {!collapsed && item.section && (
+                <p className="px-3 pb-2 pt-3 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                  {item.section}
+                </p>
+              )}
               <Link
-                href={item.href}
+                href={filterQuery ? `${item.href}?${filterQuery}` : item.href}
                 onClick={onCloseMobile}
                 title={collapsed ? item.label : undefined}
+                aria-label={item.label}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition",
+                  "group flex items-center gap-3 rounded-xl border px-2.5 py-2 text-[13px] transition",
                   active
-                    ? "bg-primary text-white"
-                    : "text-slate-300 hover:bg-sidebar-hover hover:text-white",
+                    ? "border-blue-400/25 bg-blue-400/15 font-medium text-white"
+                    : "border-transparent text-slate-300 hover:bg-white/5 hover:text-white",
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", active ? "bg-blue-300 text-slate-900" : "bg-white/5 text-slate-400 group-hover:text-white")}><Icon className="h-4 w-4" aria-hidden /></span>
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
             </li>
@@ -168,10 +195,13 @@ export function Sidebar({
       </ul>
 
       {!collapsed && (
-        <p className="border-t border-white/10 px-4 py-3 text-[11px] leading-relaxed text-slate-400">
-          Prototipe internal. Tidak berafiliasi resmi dengan X dan tidak digunakan
-          untuk menilai kandidat.
-        </p>
+        <div className="mx-5 border-t border-white/10 py-5">
+          <p className="mb-3 text-[10px] uppercase tracking-wider text-slate-400">Akun workspace</p>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-200 text-xs font-semibold text-blue-950">{user?.name.slice(0, 2).toUpperCase() ?? "TP"}</span>
+            <div className="min-w-0"><p className="truncate text-sm text-white">{user?.name}</p><p className="text-xs capitalize text-slate-400">{user?.role}</p></div>
+          </div>
+        </div>
       )}
     </nav>
   );
@@ -181,16 +211,16 @@ export function Sidebar({
       <aside
         className={cn(
           "no-print sticky top-0 hidden h-screen shrink-0 transition-all duration-200 lg:block",
-          collapsed ? "w-[68px]" : "w-[236px]",
+          collapsed ? "w-[80px]" : "w-[250px]",
         )}
       >
-        {content}
+        {content(collapsed)}
       </aside>
 
       {mobileOpen && (
         <div className="no-print fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/45" onClick={onCloseMobile} aria-hidden />
-          <div className="relative h-full w-[260px] animate-slide-in">{content}</div>
+          <div className="relative h-full w-[260px] animate-slide-in">{content(false)}</div>
         </div>
       )}
     </>
@@ -210,7 +240,11 @@ export function TopBar({
 }) {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { filters, activeCount, reset, setFilters } = useFilters();
+  const { filters, activeCount, reset, setFilters, setPeriodDays } = useFilters();
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const periodDays = Math.round((Date.parse(filters.date_to) - Date.parse(filters.date_from)) / 86400000) + 1;
+  const preset = filters.date_to === todayIso && [7, 30, 90].includes(periodDays) ? String(periodDays) : "custom";
   const [commandOpen, setCommandOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -241,8 +275,8 @@ export function TopBar({
 
   return (
     <>
-      <header className="no-print sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
-        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 lg:px-6">
+      <header className="no-print sticky top-0 z-30 border-b border-line/70 bg-surface/90 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-4 lg:px-8">
           <button
             type="button"
             onClick={onOpenMobileNav}
@@ -255,7 +289,8 @@ export function TopBar({
           <button
             type="button"
             onClick={() => setCommandOpen(true)}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2 text-left text-sm text-muted transition hover:border-primary/40 md:max-w-md"
+            className="order-last flex w-full min-w-0 items-center gap-2 rounded-full border border-line/70 bg-surface px-4 py-2.5 text-left text-sm text-muted transition hover:border-primary/40 sm:order-none sm:w-auto sm:flex-1 md:max-w-md"
+            aria-label="Cari percakapan, topik, atau pekerjaan"
           >
             <Search className="h-4 w-4 shrink-0" aria-hidden />
             <span className="truncate">
@@ -282,16 +317,10 @@ export function TopBar({
             {mode === "demo" ? "DATA DEMO" : "DATA LIVE"}
           </span>
 
-          {/* Halaman non-analitik tidak mengirim meta; periode diambil dari filter. */}
-          <span className="hidden text-[11px] text-muted xl:block">
-            {meta?.period_label ??
-              `${formatDate(filters.date_from)} – ${formatDate(filters.date_to)}`}
-          </span>
-
           <button
             type="button"
             onClick={onOpenFilters}
-            className="tp-btn shrink-0 xl:hidden"
+            className="tp-btn shrink-0"
             aria-label="Buka filter global"
           >
             Filter
@@ -314,11 +343,12 @@ export function TopBar({
             </button>
           )}
 
-          <div className="relative shrink-0" ref={profileRef}>
+          <div className="relative ml-auto shrink-0" ref={profileRef}>
             <button
               type="button"
               onClick={() => setProfileOpen((value) => !value)}
-              className="flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left transition hover:bg-surface-muted"
+              className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 text-left transition hover:bg-surface-muted"
+              aria-label={`Menu akun ${user?.name ?? "pengguna"}`}
               aria-expanded={profileOpen}
               aria-haspopup="menu"
             >
@@ -363,18 +393,26 @@ export function TopBar({
           </div>
         </div>
 
-        {meta && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-line/70 px-4 py-2.5 lg:px-8">
+          <label className="flex items-center gap-2 text-xs font-medium text-ink">
+            <CalendarDays className="h-4 w-4 text-muted" aria-hidden />
+            Periode
+            <select aria-label="Periode analisis" className="tp-input w-auto py-1.5 text-xs" value={preset} onChange={(event) => event.target.value === "custom" ? onOpenFilters() : setPeriodDays(Number(event.target.value))}>
+              <option value="7">7 hari terakhir</option>
+              <option value="30">30 hari terakhir</option>
+              <option value="90">90 hari terakhir</option>
+              <option value="custom">Tanggal khusus</option>
+            </select>
+          </label>
+          <button type="button" onClick={onOpenFilters} className="rounded-lg px-2 py-1.5 text-xs text-primary hover:bg-primary-soft" aria-label="Ubah tanggal analisis">
+            {formatDate(filters.date_from)} – {formatDate(filters.date_to)}
+          </button>
+          {meta && <span className="ml-auto text-[11px] text-muted">Diperbarui {formatRelative(meta.last_updated)}{meta.is_stale ? " · pembaruan tertunda" : ""}</span>}
+        </div>
+
+        {meta && filters.q && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line/70 px-4 py-1.5 text-[11px] text-muted lg:px-6">
-            <span>
-              Diperbarui {formatRelative(meta.last_updated)}
-              {meta.is_stale && (
-                <span className="ml-1.5 rounded bg-warning/12 px-1.5 py-0.5 text-warning-strong">
-                  data mungkin belum terbarui
-                </span>
-              )}
-            </span>
-            <span className="hidden sm:inline">Model: {meta.model_version}</span>
-            <span className="hidden md:inline">Pencarian: {meta.search_provider}</span>
+            <span className="min-w-0 break-words">Kata kunci aktif: <strong className="font-medium text-ink">{filters.q}</strong></span>
             <button
               type="button"
               className="ml-auto text-primary hover:underline"
@@ -404,7 +442,7 @@ const QUICK_PRESETS = [
 
 function CommandSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const { filters, setFilters } = useFilters();
+  const { filters } = useFilters();
   const [value, setValue] = useState(filters.q ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -426,7 +464,7 @@ function CommandSearch({ open, onClose }: { open: boolean; onClose: () => void }
 
   const navItems = useMemo(
     () =>
-      NAV_ITEMS.filter((item) =>
+      [HOME_ITEM, ...NAV_ITEMS].filter((item) =>
         value.trim()
           ? item.label.toLowerCase().includes(value.toLowerCase()) ||
             item.description.toLowerCase().includes(value.toLowerCase())
@@ -438,9 +476,8 @@ function CommandSearch({ open, onClose }: { open: boolean; onClose: () => void }
   if (!open) return null;
 
   const submit = (query: string) => {
-    setFilters({ q: query.trim() || undefined });
     onClose();
-    router.push("/post");
+    router.push(`/post?${filtersToSearchParams({ ...filters, q: query.trim() || undefined })}`);
   };
 
   return (
@@ -464,18 +501,19 @@ function CommandSearch({ open, onClose }: { open: boolean; onClose: () => void }
             ref={inputRef}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder="Contoh: gaji AND gudang -penipuan"
+            placeholder="Cari, misalnya: gaji atau kerja shift"
             aria-label="Kata kunci pencarian"
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
           />
           <button type="submit" className="tp-btn tp-btn-primary px-2.5 py-1 text-xs">
             Cari
           </button>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-muted hover:bg-surface-muted" aria-label="Tutup pencarian"><X className="h-4 w-4" aria-hidden /></button>
         </form>
 
         <div className="max-h-[52vh] overflow-y-auto p-3">
           <p className="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
-            Preset topik
+            Mulai dari topik
           </p>
           <div className="flex flex-wrap gap-1.5 px-1 pb-3">
             {QUICK_PRESETS.map((preset) => (
@@ -501,7 +539,7 @@ function CommandSearch({ open, onClose }: { open: boolean; onClose: () => void }
                   className="flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-surface-muted"
                   onClick={() => {
                     onClose();
-                    router.push(item.href);
+                    router.push(`${item.href}?${filtersToSearchParams(filters)}`);
                   }}
                 >
                   <item.icon className="mt-0.5 h-4 w-4 text-muted" aria-hidden />
@@ -543,7 +581,7 @@ export function PageHeader({
   backLabel?: string;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
         {backHref && (
           <Link
@@ -555,11 +593,11 @@ export function PageHeader({
           </Link>
         )}
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold tracking-tight text-ink">{title}</h1>
+          <h1 className="max-w-3xl text-[clamp(1.5rem,2.3vw,2rem)] font-medium leading-tight tracking-[-0.045em] text-ink">{title}</h1>
           {badge}
         </div>
         {subtitle && (
-          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted">{subtitle}</p>
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted">{subtitle}</p>
         )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

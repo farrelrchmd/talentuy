@@ -93,6 +93,7 @@ def _build_payload(db: Session, report: Report) -> dict:
     filters = FilterSet(
         date_from=report.period_start,
         date_to=report.period_end,
+        data_type=snapshot.get("data_type") or "all",
         query_id=snapshot.get("query_id"),
         job_roles=snapshot.get("job_roles") or [],
         topics=snapshot.get("topics") or [],
@@ -164,13 +165,23 @@ def _build_payload(db: Session, report: Report) -> dict:
         else []
     )
 
+    report_data_type = filters.data_type
+    report_source_mode = (
+        "demo"
+        if report_data_type == "demo"
+        else "live"
+        if report_data_type in {"real", "twitterapi_io"}
+        else settings.effective_source_mode
+    )
+
     return {
         "title": report.title,
         "period_start": report.period_start.strftime("%d %b %Y"),
         "period_end": report.period_end.strftime("%d %b %Y"),
         "generated_at": report.generated_at.strftime("%d %b %Y %H:%M UTC"),
-        "data_source_mode": settings.effective_source_mode,
-        "is_synthetic": settings.effective_source_mode == "demo",
+        "data_source_mode": report_source_mode,
+        "is_synthetic": report_data_type == "demo"
+        or (report_data_type == "all" and settings.effective_source_mode == "demo"),
         "query_snapshot": snapshot,
         "statistics": statistics,
         "charts_data": selected,

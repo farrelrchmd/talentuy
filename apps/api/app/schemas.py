@@ -8,6 +8,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.privacy import anonymize_post_url
+
 Role = Literal["admin", "analyst", "viewer"]
 HumanStatus = Literal["draft", "reviewed", "approved"]
 
@@ -87,6 +89,16 @@ class TopicUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class LabelExplanation(BaseModel):
+    """Dasar penetapan satu label: aturan yang terpicu dan kata pemicunya."""
+
+    rule: str = ""
+    triggers: list[str] = []
+    corrected: bool = False
+    # Aturan otomatis semula, disimpan saat label dikoreksi manual.
+    auto_rule: str = ""
+
+
 class PostOut(BaseModel):
     id: str
     external_post_id: str
@@ -109,10 +121,55 @@ class PostOut(BaseModel):
     relevance_score: float
     needs_review: bool
     keywords: list[str] = []
+    # Kunci: topic, sentiment, intent, job_role. Kosong bila post dianalisis
+    # sebelum dasar klasifikasi disimpan (jalankan analisis ulang).
+    explanation: dict[str, LabelExplanation] = {}
     # Confidence hanya diisi untuk admin/analyst.
     sentiment_confidence: float | None = None
     intent_confidence: float | None = None
     model_version: str | None = None
+
+    @field_validator("url")
+    @classmethod
+    def _strip_username(cls, value: str | None) -> str | None:
+        # Jaring pengaman untuk baris lama yang belum dimigrasi: username di
+        # URL post X tidak pernah dikirim ke frontend.
+        return anonymize_post_url(value)
+
+
+LabelField = Literal["topic", "sentiment", "intent", "job_role"]
+
+
+class LabelSuggestionIn(BaseModel):
+    field: LabelField
+    suggested_label: str = Field(min_length=1, max_length=160)
+    note: str = Field(default="", max_length=500)
+
+
+class KeywordPresetIn(BaseModel):
+    topic_slug: str = Field(min_length=1, max_length=80)
+    label: str = Field(min_length=1, max_length=120)
+    query_text: str = Field(min_length=1, max_length=300)
+    sort_order: int = 0
+    is_active: bool = True
+
+
+class KeywordPresetUpdate(BaseModel):
+    topic_slug: str | None = Field(default=None, min_length=1, max_length=80)
+    label: str | None = Field(default=None, min_length=1, max_length=120)
+    query_text: str | None = Field(default=None, min_length=1, max_length=300)
+    sort_order: int | None = None
+    is_active: bool | None = None
+
+
+class KeywordPresetOut(BaseModel):
+    id: str
+    topic_slug: str
+    topic_name: str
+    label: str
+    query_text: str
+    sort_order: int
+    is_active: bool
 
 
 class PostListResponse(BaseModel):
@@ -269,6 +326,10 @@ class ImportResult(BaseModel):
     records_failed: int
     status: str
     errors: list[str]
+
+
+class PublicPostUrlIn(BaseModel):
+    url: str = Field(min_length=20, max_length=500)
 
 
 class IngestionRunOut(BaseModel):

@@ -118,6 +118,8 @@ class PostAnalysis(Base):
     relevance_score: Mapped[float] = mapped_column(Float, default=0.0)
     engagement_score: Mapped[float] = mapped_column(Float, default=0.0, index=True)
     keywords: Mapped[list] = mapped_column(JSON, default=list)
+    # Dasar klasifikasi per label (aturan + kata pemicu); lihat nlp/pipeline.py.
+    explanation: Mapped[dict | None] = mapped_column(JSON)
     model_version: Mapped[str] = mapped_column(String(40), default="baseline-1.0.0")
     analyzed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     needs_review: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -130,6 +132,24 @@ class PostAnalysis(Base):
         Index("ix_analysis_topic_sentiment", "topic_id", "sentiment_label"),
         Index("ix_analysis_role_intent", "job_role", "intent_label"),
     )
+
+
+class KeywordPreset(Base):
+    """Kueri terpandu per kategori isu (karakteristik *starting* Ellis)."""
+
+    __tablename__ = "keyword_presets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    topic_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("topics.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    query_text: Mapped[str] = mapped_column(String(300), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+
+    topic: Mapped[Topic] = relationship("Topic", lazy="joined")
 
 
 class Monitor(Base):

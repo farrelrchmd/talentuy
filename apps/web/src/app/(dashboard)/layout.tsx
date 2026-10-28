@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { FilterPanel } from "@/components/filter-panel";
 import { Sidebar, TopBar } from "@/components/shell";
-import { InlineLoader } from "@/components/ui";
+import { Drawer, InlineLoader } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 import { FilterProvider } from "@/hooks/useFilters";
 import { MetaProvider, useMeta } from "@/hooks/useMeta";
@@ -52,31 +52,18 @@ function Shell({ children }: { children: ReactNode }) {
           <main
             id="konten-utama"
             ref={mainRef}
-            className="min-w-0 flex-1 px-4 py-5 lg:px-6 focus:outline-none"
+            className="tp-workspace min-w-0 flex-1 focus:outline-none"
             tabIndex={-1}
           >
-            <div className="mx-auto w-full max-w-[1440px]">{children}</div>
+            <div className="tp-page w-full" key={pathname}>{children}</div>
           </main>
 
-          {/* Panel filter menetap pada layar lebar agar konteks selalu terlihat. */}
-          <aside className="no-print sticky top-[86px] hidden h-[calc(100vh-86px)] w-[268px] shrink-0 overflow-hidden border-l border-line xl:block">
-            <FilterPanel />
-          </aside>
         </div>
       </div>
 
-      {filtersOpen && (
-        <div className="no-print fixed inset-0 z-50 flex justify-end xl:hidden">
-          <div
-            className="absolute inset-0 bg-sidebar/40"
-            onClick={() => setFiltersOpen(false)}
-            aria-hidden
-          />
-          <div className="relative h-full w-[290px] animate-slide-in shadow-drawer">
-            <FilterPanel onClose={() => setFiltersOpen(false)} />
-          </div>
-        </div>
-      )}
+      <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filter global" subtitle="Perubahan langsung diterapkan ke seluruh analisis." width="max-w-sm" footer={<button type="button" className="tp-btn tp-btn-primary w-full" onClick={() => setFiltersOpen(false)}>Lihat hasil</button>}>
+        <FilterPanel />
+      </Drawer>
     </div>
   );
 }

@@ -1,48 +1,55 @@
 # Laporan Pengujian
 
-Dijalankan pada 29 Agustus 2026, commit kerja lokal, mode data **demo** dengan
-dataset sintetis 1.400 post / 90 hari (`python -m app.seed --reset`).
+Ini satu-satunya tempat jumlah pengujian dicatat (lihat README). Perbarui angka
+di bawah setiap kali menambah atau menghapus pengujian.
+
+Pembaruan terakhir: 20 Oktober 2026, mode data **demo** dengan dataset sintetis
+1.400 post / 90 hari (`python -m app.seed --reset`), setelah penambahan partisi
+lima jenis pekerjaan, preset kata kunci, dan dasar klasifikasi. Baris
+aksesibilitas, visual QA, dan performa masih hasil putaran 29 Agustus 2026.
 
 | Lapisan | Perkakas | Jumlah | Hasil |
 | --- | --- | --- | --- |
-| Backend unit/integration | pytest 8.3.4 | 61 | ✅ lolos |
-| Frontend unit/komponen | Vitest 2.1.8 + Testing Library | 43 (7 berkas) | ✅ lolos |
-| End-to-end | Playwright 1.49.1 (Chromium) | 20 skenario | ✅ lolos |
+| Backend unit/integration | pytest 8.3.4 | 84 (4 berkas) | ✅ lolos |
+| Frontend unit/komponen | Vitest 2.1.8 + Testing Library | 50 (8 berkas) | ✅ lolos |
+| End-to-end | Playwright 1.49.1 (Chromium) | 25 skenario (6 berkas) | ⚠️ 24 lolos, 1 gagal (lihat bagian 3) |
 | Aksesibilitas | axe-core 4.13 (WCAG 2.1 A/AA) | 8 halaman + 5 uji manual | ✅ tanpa pelanggaran |
 | Visual QA | Playwright, 4 ukuran layar | 4 pemeriksaan × 8 halaman | ✅ lolos |
 | Performa | Benchmark in-process, 5.000 post | 11 endpoint | ✅ jauh di bawah target 3 detik |
 | Tipe | `tsc --noEmit` (strict) | – | ✅ tanpa error |
 | Lint | ESLint (`next lint`) | – | ✅ tanpa peringatan |
-| Build | `next build` | 11 rute | ✅ berhasil |
+| Build | `next build` | 12 rute | ✅ berhasil |
 
-## 1. Backend (61 pengujian)
+## 1. Backend (84 pengujian)
 
 | Berkas | Jumlah | Cakupan |
 | --- | --- | --- |
 | `tests/test_analytics.py` | 15 | Perhitungan KPI, periode pembanding, pembagi nol, deteksi puncak, indeks tren, breakdown topik/sentimen/pekerjaan, skor perhatian |
-| `tests/test_api.py` | 31 | Login dan hierarki role, izin per endpoint, filter kombinasi, paginasi, alur insight dan laporan, ekspor, validasi impor CSV, penarikan X API (izin admin, penolakan tanpa token, ingest post nyata), metadata badge sintetis |
-| `tests/test_search_and_nlp.py` | 15 | Parser query (`AND`/`OR`/`-kata`/frasa), pengurutan relevansi, normalisasi teks, klasifikasi topik/sentimen/intent, label "Tidak Yakin" |
+| `tests/test_api.py` | 41 | Login dan hierarki role, izin per endpoint, filter kombinasi, paginasi, alur insight dan laporan, ekspor, validasi impor CSV, penarikan X API (izin admin, penolakan tanpa token, ingest post nyata), metadata badge sintetis, dasar klasifikasi pada detail post, koreksi dan usulan koreksi label, CRUD preset kata kunci (khusus admin), partisi kategori isu × jenis pekerjaan yang cocok dengan drill-down |
+| `tests/test_search_and_nlp.py` | 19 | Parser query (`AND`/`OR`/`-kata`/frasa), pengurutan relevansi, normalisasi teks, klasifikasi topik/sentimen/intent, label "Tidak Yakin", lima jenis pekerjaan naskah, aturan + kata pemicu untuk setiap label |
+| `tests/test_twitterapi_io.py` | 9 | Connector twitterapi.io: pemetaan respons dan permintaan, batas halaman dan deduplikasi, error provider tanpa membocorkan isi respons dan tanpa retry, respons tidak valid, pemilihan provider + ingest |
 
 ```bash
 cd apps/api && pytest
-# 61 passed
+# 84 passed
 ```
 
-## 2. Frontend (38 pengujian)
+## 2. Frontend (50 pengujian)
 
 | Berkas | Jumlah | Cakupan |
 | --- | --- | --- |
-| `src/lib/filters.test.ts` | 8 | Jendela bawaan 30 hari, round-trip URL, chip filter, cross-filter toggle, parameter API |
+| `src/lib/filters.test.ts` | 9 | Jendela bawaan 30 hari, round-trip URL, chip filter, cross-filter toggle, parameter API |
 | `src/lib/format.test.ts` | 8 | Format ribuan/persen ala Indonesia, "Tidak dapat dibandingkan", nada perubahan, waktu relatif |
-| `src/lib/branding.test.ts` | 5 | Simpan/muat identitas, validasi warna, ketahanan terhadap data rusak, penulisan CSS variable |
+| `src/lib/branding.test.ts` | 6 | Simpan/muat identitas, validasi warna, ketahanan terhadap data rusak, penulisan CSS variable |
 | `src/components/ui.test.tsx` | 8 | Empty state, no-result, error, permission denied, badge sentimen, Escape pada drawer, konfirmasi aksi destruktif |
 | `src/hooks/useFilters.test.tsx` | 4 | Filter dibaca dari URL, klik grafik → filter berubah, hapus chip, reset |
 | `src/app/masuk/page.test.tsx` | 5 | Validasi form, login berhasil → redirect, pesan error Bahasa Indonesia, isi otomatis akun demo |
 | `src/components/charts.test.tsx` | 5 | Tingkat warna heatmap, batas skala, kontras WCAG tiap tingkat, kelengkapan warna sentimen |
+| `src/components/classification-basis.test.tsx` | 5 | Pencocokan kata pemicu, penyorotan pada teks asli, aturan keempat label, status koreksi manual, keterangan pemicu hasil normalisasi |
 
 ```bash
 cd apps/web && npm run test
-# Test Files 7 passed | Tests 43 passed
+# Test Files 8 passed | Tests 50 passed
 ```
 
 ## 3. End-to-end (Tugas 1–5)
@@ -53,7 +60,7 @@ Skenario identik dengan `docs/usability_test.md`.
 | --- | --- | --- |
 | Tugas 1 — topik dominan staf gudang, filter bertahan antar halaman | 7,2 s | ✅ |
 | Tugas 2 — pertanyaan sistem shift, membuka 3 post | 4,8 s | ✅ |
-| Tugas 3 — membandingkan sentimen admin vs sales promotion | 1,9 s | ✅ |
+| Tugas 3 — membandingkan sentimen Administrasi vs SPG/SPB | 3,3 s | ✅ |
 | Tugas 4 — menyimpan monitor "penipuan lowongan" | 3,3 s | ✅ |
 | Tugas 5 — menyusun laporan (3 insight, watermark data sintetis) | 4,1 s | ✅ |
 
@@ -61,6 +68,21 @@ Skenario identik dengan `docs/usability_test.md`.
 cd apps/api && uvicorn app.main:app --port 8000    # terminal terpisah
 npm run e2e                                        # dari root
 ```
+
+### Fitur naskah (`tests/e2e/thesis-features.spec.ts`)
+
+| Skenario | Hasil |
+| --- | --- |
+| Kartu kategori isu × jenis pekerjaan menelusur sampai daftar post (filter `topics` dan `job_roles` di URL) | ✅ |
+| Preset kata kunci mengisi kueri sekali klik, tanpa mengetik | ✅ |
+| Detail post menampilkan dasar klasifikasi, menyorot kata pemicu, dan admin mengoreksi label dari tampilan yang sama | ✅ |
+
+### Tata letak cair (`tests/e2e/fluid-layout.spec.ts`)
+
+| Skenario | Hasil |
+| --- | --- |
+| Filter jenis pekerjaan bertahan lintas halaman | ✅ |
+| Periode dan filter bertahan saat menelusuri post | ❌ mencari tautan navigasi "Ringkasan", padahal perubahan `shell.tsx` yang belum di-commit mengganti labelnya menjadi "Beranda". Perbarui spesifikasi atau label navigasi |
 
 ### Peran dan alur data (`tests/e2e/roles-and-data.spec.ts`)
 

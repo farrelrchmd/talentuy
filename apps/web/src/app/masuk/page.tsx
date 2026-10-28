@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { BrandMark } from "@/components/brand-mark";
 import { ApiError, apiRequest } from "@/lib/api";
 
 interface DemoAccount {
@@ -26,7 +27,7 @@ export default function LoginPage() {
   const [demoPassword, setDemoPassword] = useState<string>("");
 
   useEffect(() => {
-    if (!isLoading && user) router.replace("/ringkasan");
+    if (!isLoading && user) router.replace("/");
   }, [isLoading, user, router]);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      router.replace("/ringkasan");
+      router.replace("/");
     } catch (caught) {
       setError(
         caught instanceof ApiError
@@ -65,57 +66,59 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Panel kiri: konteks produk, bukan klaim afiliasi dengan platform mana pun. */}
-      <section className="relative hidden flex-col justify-between bg-sidebar p-10 text-slate-300 lg:flex">
-        <div className="flex items-center gap-2.5 text-white">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-sm font-bold">
-            TP
+      <section className="tp-login-panel relative hidden flex-col justify-between border-r border-line p-10 text-ink lg:flex xl:p-14">
+        <div className="flex items-center gap-2.5 text-ink">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-white">
+            <BrandMark className="h-6 w-6" />
           </span>
-          <span className="text-lg font-semibold tracking-tight">TalentPulse</span>
+          <span className="text-3xl font-semibold tracking-[-0.04em]">TID<span className="mt-1 block text-xs font-normal tracking-normal text-muted">Talent Intelegence Dashboard</span></span>
         </div>
 
-        <div className="max-w-lg">
-          <h1 className="text-3xl font-semibold leading-tight text-white">
+        <div className="max-w-xl py-12">
+          <p className="mb-6 text-xs font-medium uppercase tracking-[0.18em] text-primary">Percakapan menjadi pemahaman</p>
+          <h1 className="text-[44px] font-medium leading-[1.06] tracking-[-0.06em] text-ink xl:text-[60px]">
             Dengar percakapan kandidat.
             <br />
             Perjelas komunikasi rekrutmen.
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-slate-400">
+          <p className="mt-7 max-w-md text-sm leading-relaxed text-muted">
             Dashboard internal untuk menelusuri pertanyaan, kekhawatiran, dan
             pengalaman pencari kerja pada percakapan publik — sebagai bahan menyusun
             informasi lowongan yang lebih jelas.
           </p>
 
-          <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-white/10 pt-6 text-xs">
+          <dl className="mt-10 grid grid-cols-3 gap-4 border-t border-primary/20 pt-6 text-xs">
             {[
               ["Topik terkelola", "10 kategori"],
               ["Rentang data demo", "90 hari"],
               ["Metrik", "Dihitung backend"],
             ].map(([label, value]) => (
               <div key={label}>
-                <dt className="text-slate-400">{label}</dt>
-                <dd className="mt-1 font-medium text-white">{value}</dd>
+                <dt className="text-muted">{label}</dt>
+                <dd className="mt-2 font-medium text-ink">{value}</dd>
               </div>
             ))}
           </dl>
         </div>
 
-        <p className="text-[11px] leading-relaxed text-slate-400">
+        <p className="max-w-lg text-[11px] leading-relaxed text-muted">
           Prototipe tugas akhir berbasis karya untuk PT Siprama Cakrawala. Tidak
           berafiliasi resmi dengan X. Tidak digunakan untuk profiling atau keputusan
           penerimaan kandidat.
         </p>
       </section>
 
-      <section className="flex items-center justify-center px-5 py-10">
+      <section className="flex items-center justify-center bg-surface px-5 py-10">
         <div className="w-full max-w-sm">
           <div className="mb-6 lg:hidden">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-sm font-bold text-white">
-              TP
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-white">
+              <BrandMark className="h-6 w-6" />
             </span>
-            <h1 className="mt-3 text-lg font-semibold">TalentPulse</h1>
+            <h1 className="mt-3 text-2xl font-semibold">TID</h1>
+            <p className="mt-1 text-xs text-muted">Talent Intelegence Dashboard</p>
           </div>
 
-          <h2 className="text-xl font-semibold tracking-tight">Masuk ke dashboard</h2>
+          <h2 className="text-[32px] font-medium leading-tight tracking-[-0.05em]">Masuk ke dashboard</h2>
           <p className="mt-1.5 text-xs leading-relaxed text-muted">
             Aplikasi ini adalah prototipe internal. Data yang ditampilkan pada mode
             demo bersifat sintetis dan bukan kondisi aktual.
@@ -135,7 +138,7 @@ export default function LoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 aria-invalid={Boolean(error)}
                 className="tp-input"
-                placeholder="nama@talentpulse.local"
+                placeholder="nama@perusahaan.com"
               />
             </div>
 

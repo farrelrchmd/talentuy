@@ -14,12 +14,13 @@ export interface Branding {
 
 export const DEFAULT_BRANDING: Branding = {
   companyName: "PT Siprama Cakrawala (placeholder)",
-  productName: "TalentPulse",
+  productName: "TID",
   primaryColor: "#2563eb",
 };
 
 const STORAGE_KEY = "talentpulse.branding";
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const LEGACY_DEFAULT_PRIMARY = "#2b5f48";
 
 export function isValidHex(value: string): boolean {
   return HEX_PATTERN.test(value.trim());
@@ -31,12 +32,20 @@ export function loadBranding(): Branding {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_BRANDING;
     const parsed = JSON.parse(raw) as Partial<Branding>;
+    const savedPrimary = parsed.primaryColor?.toLowerCase();
+    const primaryColor =
+      savedPrimary === LEGACY_DEFAULT_PRIMARY
+        ? DEFAULT_BRANDING.primaryColor
+        : isValidHex(parsed.primaryColor ?? "")
+          ? (parsed.primaryColor as string)
+          : DEFAULT_BRANDING.primaryColor;
     return {
       companyName: parsed.companyName?.trim() || DEFAULT_BRANDING.companyName,
-      productName: parsed.productName?.trim() || DEFAULT_BRANDING.productName,
-      primaryColor: isValidHex(parsed.primaryColor ?? "")
-        ? (parsed.primaryColor as string)
-        : DEFAULT_BRANDING.primaryColor,
+      productName: /^talent\s*(pulse|pluse)$/i.test(parsed.productName?.trim() ?? "")
+        ? DEFAULT_BRANDING.productName
+        : parsed.productName?.trim() || DEFAULT_BRANDING.productName,
+      // Migrasikan warna hijau bawaan lama, tetapi pertahankan warna kustom pengguna.
+      primaryColor,
     };
   } catch {
     return DEFAULT_BRANDING;

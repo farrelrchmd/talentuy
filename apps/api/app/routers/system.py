@@ -12,10 +12,10 @@ from app.timeutil import utcnow
 from app.analytics import data_freshness
 from app.config import settings
 from app.database import get_db
-from app.deps import get_current_user, require_admin, write_audit
+from app.deps import get_current_user, require_admin, require_analyst, write_audit
 from app.models import Post, PostAnalysis, Topic, UsabilityEvent, User
-from app.schemas import UsabilityEventIn
-from app.taxonomy import PRODUCT_LIMITATIONS
+from app.schemas import LabelSuggestionIn, UsabilityEventIn
+from app.taxonomy import INTENTS, JOB_ROLES, PRODUCT_LIMITATIONS, SENTIMENTS
 
 router = APIRouter(tags=["system"])
 
@@ -57,8 +57,8 @@ def methodology(db: Session = Depends(get_db)) -> dict:
         "data_source_mode": settings.effective_source_mode,
         "is_synthetic": settings.effective_source_mode == "demo",
         "collection": (
-            "Data diperoleh melalui connector resmi X API atau dibangkitkan secara "
-            "sintetis. Tidak ada scraping dan tidak ada pengumpulan data pribadi."
+            "Data diperoleh melalui X API resmi, provider pihak ketiga twitterapi.io, impor, atau dibangkitkan secara "
+            "sintetis. Identitas penulis tidak disimpan oleh connector pencarian."
         ),
         "processing": (
             "Teks dinormalisasi, lalu diberi label topik, sentimen, dan intent oleh "
@@ -91,6 +91,27 @@ class LabelCorrection(BaseModel):
     needs_review: bool | None = None
 
 
+_EXPLANATION_KEYS = {
+    "topic_slug": "topic",
+    "sentiment_label": "sentiment",
+    "intent_label": "intent",
+    "job_role": "job_role",
+}
+
+_ALLOWED_LABELS = {
+    "sentiment_label": SENTIMENTS,
+    "intent_label": INTENTS,
+    "job_role": JOB_ROLES,
+}
+
+
+def _validate_labels(changes: dict) -> None:
+    for field, allowed in _ALLOWED_LABELS.items():
+        value = changes.get(field)
+        if value is not None and value not in allowed:
+            raise HTTPException(status_code=422, detail=f"Label '{value}' tidak dikenal.")
+
+
 @router.patch("/posts/{post_id}/labels")
 def correct_labels(
     post_id: str,
@@ -105,6 +126,26 @@ def correct_labels(
 
     analysis: PostAnalysis = post.analysis
     changes = payload.model_dump(exclude_unset=True)
+    _validate_labels(changes)
+
+    # Catat label otomatis yang diganti agar dasar klasifikasi tetap jujur.
+    explanation = {key: dict(value) for key, value in (analysis.explanation or {}).items()}
+    for field, key in _EXPLANATION_KEYS.items():
+        if field not in changes:
+            continue
+        if field == "topic_slug":
+            previous = analysis.topic.name if analysis.topic else None
+        else:
+            previous = getattr(analysis, field)
+        entry = explanation.get(key, {"rule": "", "triggers": []})
+        if not entry.get("corrected"):
+            entry["auto_rule"] = entry.get("rule", "")
+        entry["corrected"] = True
+        entry["rule"] = (
+            f"Dikoreksi manual oleh admin. Label sebelumnya: {previous or 'tanpa label'}."
+        )
+        explanation[key] = entry
+    analysis.explanation = explanation
 
     if "topic_slug" in changes:
         slug = changes.pop("topic_slug")
@@ -128,6 +169,28 @@ def correct_labels(
     write_audit(db, user, "label.correct", "post", post.id, changes)
     db.commit()
     return {"status": "ok", "post_id": post.id, "message": "Label berhasil diperbarui."}
+
+
+@router.post("/posts/{post_id}/label-suggestions", status_code=201)
+def suggest_label(
+    post_id: str,
+    payload: LabelSuggestionIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_analyst),
+) -> dict:
+    """Analis mengusulkan koreksi; admin memutuskan lewat koreksi label."""
+    post = db.get(Post, post_id)
+    if post is None or post.analysis is None:
+        raise HTTPException(status_code=404, detail="Post atau analisisnya tidak ditemukan.")
+
+    post.analysis.needs_review = True
+    write_audit(db, user, "label.suggest", "post", post.id, payload.model_dump())
+    db.commit()
+    return {
+        "status": "ok",
+        "post_id": post.id,
+        "message": "Usulan koreksi tercatat dan post ditandai perlu ditinjau admin.",
+    }
 
 
 @router.post("/usability/events", status_code=201)

@@ -95,9 +95,9 @@ export function Card({
       className={cn("tp-card flex min-w-0 flex-col", className)}
       aria-label={title}
     >
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
+      <header className="flex flex-wrap items-start justify-between gap-3 px-6 pb-2 pt-6">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-1.5 text-[15px] font-semibold text-ink">
+          <h2 className="flex items-center gap-1.5 text-[18px] font-medium tracking-tight text-ink">
             {title}
             {definition && <InfoTooltip label={title} text={definition} />}
           </h2>
@@ -109,7 +109,7 @@ export function Card({
           <div className="flex flex-wrap items-center gap-2">{actions}</div>
         )}
       </header>
-      <div className="min-w-0 flex-1 px-5 py-4">{children}</div>
+      <div className="min-w-0 flex-1 px-6 py-5">{children}</div>
       {dataSummary && (
         <p className="sr-only" aria-live="polite">
           {dataSummary}

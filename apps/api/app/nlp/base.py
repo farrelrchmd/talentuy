@@ -15,6 +15,9 @@ class Label:
     label: str
     confidence: float
     evidence: list[str] = field(default_factory=list)
+    # Kalimat singkat yang menjelaskan aturan mana yang menetapkan label ini;
+    # ditampilkan apa adanya pada detail post (dasar klasifikasi).
+    rule: str = ""
 
 
 class SentimentAnalyzer(ABC):

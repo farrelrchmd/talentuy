@@ -15,11 +15,11 @@ const VIEWPORTS = [
 ];
 
 const PAGES = [
-  { path: "/ringkasan", slug: "overview", heading: "Ringkasan Percakapan Kandidat" },
+  { path: "/", slug: "overview", heading: "Ringkasan Percakapan Kandidat" },
   { path: "/tren", slug: "tren", heading: "Analisis Tren" },
   { path: "/topik", slug: "topik", heading: "Eksplorasi Topik" },
   { path: "/post", slug: "post", heading: "Pencarian Post" },
-  { path: "/pemantauan", slug: "pemantauan", heading: "Pemantauan Tersimpan" },
+  { path: "/monitoring", slug: "monitoring", heading: "Monitoring" },
   { path: "/laporan", slug: "laporan", heading: "Laporan Insight" },
   { path: "/data", slug: "data", heading: "Data & Pengaturan" },
   { path: "/metodologi", slug: "metodologi", heading: "Metodologi & Etika Data" },

@@ -99,6 +99,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const removeChip = useCallback((chip: ActiveFilterChip) => {
     pendingUrlPush.current = true;
     setLocalFilters((current) => {
+      if (chip.key === "data_type") return { ...current, data_type: undefined };
       if (chip.key === "q") return { ...current, q: undefined };
       if (chip.key === "min_engagement" || chip.key === "max_engagement") {
         return { ...current, [chip.key]: undefined };

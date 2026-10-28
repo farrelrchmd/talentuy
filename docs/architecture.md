@@ -11,7 +11,7 @@ frontend dashboard. Seluruhnya dijalankan bersama melalui `docker compose`.
 │  (browser)   │ ◀─────────────────────  │  (server)    │ ◀────────────  │  / SQLite  │
 └──────────────┘   token JWT (Bearer)    └──────────────┘                └────────────┘
                                               │
-                                              ├── connectors/ (mock X, X API resmi, impor CSV/JSON)
+                                              ├── connectors/ (mock, URL X publik, X API, impor CSV/JSON)
                                               ├── nlp/        (normalisasi, topik, sentimen, intent)
                                               └── search/     (SearchProvider: PostgreSQL FTS / SQLite LIKE)
 ```
@@ -30,7 +30,7 @@ menerima token, dan tidak ada permintaan langsung dari browser ke pihak ketiga.
 | Analitik | `app/analytics.py` | KPI, deret waktu, puncak, breakdown, heatmap, isu perhatian |
 | NLP | `app/nlp/` | Pipeline label yang dapat dijelaskan (leksikon + aturan) |
 | Pencarian | `app/search/` | Abstraksi `SearchProvider` beserta implementasi SQL |
-| Connector | `app/connectors/` | `MockXConnector`, `OfficialXConnector`, `CsvImportConnector` |
+| Connector | `app/connectors/` | `MockXConnector`, `XPublicEmbedConnector`, `OfficialXConnector`, `CsvImportConnector` |
 | Ingest | `app/ingest.py` | Normalisasi, deduplikasi, analisis, pencatatan `ingestion_runs` |
 | Laporan | `app/reporting.py` | Ekspor PDF (ReportLab) dan CSV agregat |
 | Keamanan | `app/security.py`, `app/deps.py` | Hash bcrypt, JWT, dependency role, audit log |

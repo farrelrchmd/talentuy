@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.config import settings
+from app.nlp.base import Label
 from app.nlp.baseline import (
     MODEL_VERSION,
     FrequencyKeywordExtractor,
@@ -33,6 +34,10 @@ class AnalysisResult:
     engagement_score: float
     relevance_score: float
     needs_review: bool
+    # Dasar penetapan tiap label: {"topic"|"sentiment"|"intent"|"job_role":
+    # {"rule": str, "triggers": [str]}}. Disimpan apa adanya agar frontend
+    # tidak perlu menghitung ulang aturan.
+    explanation: dict[str, dict]
     model_version: str = MODEL_VERSION
 
 
@@ -47,6 +52,10 @@ def engagement_score(
         + quotes * settings.engagement_weight_quote,
         2,
     )
+
+
+def _explain(label: Label) -> dict:
+    return {"rule": label.rule, "triggers": list(label.evidence)}
 
 
 class AnalysisPipeline:
@@ -100,6 +109,12 @@ class AnalysisPipeline:
             engagement_score=engagement,
             relevance_score=relevance,
             needs_review=needs_review,
+            explanation={
+                "topic": _explain(topic),
+                "sentiment": _explain(sentiment),
+                "intent": _explain(intent),
+                "job_role": _explain(role),
+            },
         )
 
 

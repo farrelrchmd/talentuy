@@ -23,11 +23,11 @@
 | --- | --- |
 | Overview | 6 KPI, volume harian + puncak, topik teratas, sentimen per pekerjaan, heatmap kekhawatiran, isu perlu perhatian, pertanyaan teratas |
 | Analisis Tren | Granularitas harian/mingguan, mode indeks, perbandingan periode sebelumnya, breakdown topik/pekerjaan/sentimen, anotasi lonjakan |
-| Eksplorasi Topik | Kartu topik dengan perubahan periode, drill-down detail, kata kunci terkait, pertanyaan per topik |
-| Pencarian Post | Pencarian, pengurutan relevansi/terbaru/engagement, paginasi, penyorotan istilah, panel detail post |
-| Pemantauan Tersimpan | Daftar monitor, tren 7 hari, perubahan antar periode, buka di dashboard, duplikat, arsip |
+| Eksplorasi Topik | Kartu topik dengan perubahan periode, kartu kombinasi kategori isu × jenis pekerjaan dengan drill-down ke daftar post, detail topik, kata kunci terkait, pertanyaan per topik |
+| Pencarian Post | Pencarian, preset kata kunci per kategori isu, pengurutan relevansi/terbaru/engagement, paginasi, penyorotan istilah, panel detail post dengan dasar klasifikasi tiap label dan koreksi/usulan koreksi |
+| Monitoring | Daftar monitor, tren 7 hari, perubahan antar periode, buka di dashboard, duplikat, arsip |
 | Laporan Insight | Saran insight dari data, alur draft → ditinjau → disetujui, catatan peninjau, penyusun laporan, pratinjau, ekspor PDF/CSV/Post ID |
-| Data & Pengaturan | Status connector, kualitas data, impor CSV/JSON, analisis ulang, bangkitkan data demo, taxonomy topik, kamus istilah, log proses, audit log, identitas dan warna merek |
+| Data & Pengaturan | Status connector, kualitas data, impor CSV/JSON, analisis ulang, bangkitkan data demo, taxonomy topik, preset kata kunci, kamus istilah, log proses, audit log, identitas dan warna merek |
 | Metodologi & Etika | Sumber dan pengolahan data, etika, keterbatasan, cara membaca dashboard, pemetaan Ellis dan Information Foraging, ringkasan usability |
 
 ### Data dan pengolahan
@@ -36,9 +36,11 @@
 - Impor CSV/JSON dengan validasi kolom, deduplikasi, dan laporan baris gagal.
 - Penarikan data nyata dari X API resmi (`POST /data/fetch-live`, admin) memakai
   pipeline yang sama; aktif hanya bila `X_API_BEARER_TOKEN` tersedia di server.
-- Pipeline NLP baseline: normalisasi, topik, sentimen, intent, kata kunci.
+- Pipeline NLP baseline: normalisasi, topik, sentimen, intent, lima jenis pekerjaan, kata kunci.
+- Dasar klasifikasi (aturan + kata pemicu) disimpan per label dan ditampilkan di detail post.
 - Analisis ulang seluruh post setelah taxonomy berubah.
-- Koreksi label manual oleh admin (human-in-the-loop) yang tercatat pada audit log.
+- Koreksi label manual oleh admin dan usulan koreksi oleh analis dari detail post,
+  keduanya tercatat pada audit log.
 
 ### Kualitas antarmuka
 

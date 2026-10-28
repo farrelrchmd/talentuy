@@ -49,11 +49,11 @@ const config: Config = {
       fontSize: {
         // Body minimum 14px pada desktop (bagian 12 dokumen).
         base: ["0.875rem", { lineHeight: "1.45rem" }],
-        sm: ["0.8125rem", { lineHeight: "1.2rem" }],
+        sm: ["0.875rem", { lineHeight: "1.35rem" }],
         xs: ["0.75rem", { lineHeight: "1.1rem" }],
       },
       borderRadius: {
-        card: "14px",
+        card: "20px",
       },
       boxShadow: {
         card: "0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04)",

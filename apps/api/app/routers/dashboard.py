@@ -116,6 +116,7 @@ def topics(
     total = sum(t["count"] for t in rows)
     return {
         "topics": rows,
+        "partitions": analytics.topic_role_partitions(db, filters),
         "total_posts": total,
         "related_keywords": analytics.related_keywords(db, filters),
         "questions": analytics.top_questions(db, filters, limit=10),

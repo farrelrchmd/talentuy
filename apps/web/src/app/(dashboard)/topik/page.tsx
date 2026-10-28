@@ -24,8 +24,9 @@ import { useFilters } from "@/hooks/useFilters";
 import { useReportMeta } from "@/hooks/useMeta";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { filtersToSearchParams } from "@/lib/filters";
 import { formatNumber, formatPercent, formatShortDate, truncate } from "@/lib/format";
-import type { TopicRow } from "@/lib/types";
+import type { TopicRolePartition, TopicRow } from "@/lib/types";
 
 function TopicCard({
   topic,
@@ -117,6 +118,56 @@ function TopicCard({
   );
 }
 
+const PARTITION_PREVIEW = 9;
+
+function PartitionCard({
+  partition,
+  onOpenPosts,
+  onFilter,
+}: {
+  partition: TopicRolePartition;
+  onOpenPosts: () => void;
+  onFilter: () => void;
+}) {
+  return (
+    <article className="flex flex-col rounded-lg border border-line bg-surface px-3 py-2.5">
+      <div className="flex items-start gap-2">
+        <span
+          className="mt-1 h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: partition.color }}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[13px] font-semibold leading-snug text-ink">
+            {partition.topic_name}
+            <span className="font-normal text-muted"> × </span>
+            {partition.job_role}
+          </h3>
+          <p className="tabular mt-0.5 text-[11px] text-muted">
+            {formatNumber(partition.count)} post · {formatPercent(partition.share)} ·{" "}
+            {formatNumber(partition.questions)} pertanyaan
+          </p>
+        </div>
+        {partition.negative_share >= 25 && (
+          <Tag tone="warning">{formatPercent(partition.negative_share)} negatif</Tag>
+        )}
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenPosts}
+          className="text-xs font-medium text-primary hover:underline"
+        >
+          Lihat post
+        </button>
+        <button type="button" onClick={onFilter} className="text-xs text-muted hover:text-ink">
+          Terapkan sebagai filter
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function TopicExplorer() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -125,6 +176,7 @@ function TopicExplorer() {
   useReportMeta(data?.meta);
 
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const [showAllPartitions, setShowAllPartitions] = useState(false);
   const { data: detail, isLoading: detailLoading } = useTopicDetail(activeSlug, apiParams);
 
   // Mendukung tautan drill-down dari Overview (?fokus=slug).
@@ -186,6 +238,66 @@ function TopicExplorer() {
                   ))}
             </div>
           </section>
+
+          <Card
+            title="Kategori isu × jenis pekerjaan"
+            description="Satu kartu untuk setiap kombinasi yang muncul pada filter aktif, diurutkan dari volume terbesar."
+            definition="Jenis pekerjaan mengikuti lima partisi naskah (SPG/SPB, Staf Gudang, Kasir, Administrasi, Pengemudi) ditambah Lainnya. Persentase dihitung terhadap seluruh post terklasifikasi."
+          >
+            {isLoading || !data ? (
+              <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <Skeleton key={index} className="h-[86px] w-full" />
+                ))}
+              </div>
+            ) : data.partitions.length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted">
+                Belum ada kombinasi kategori isu dan jenis pekerjaan pada filter ini.
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                  {(showAllPartitions
+                    ? data.partitions
+                    : data.partitions.slice(0, PARTITION_PREVIEW)
+                  ).map((partition) => (
+                    <PartitionCard
+                      key={`${partition.topic_slug}|${partition.job_role}`}
+                      partition={partition}
+                      onOpenPosts={() => {
+                        // URL dibangun langsung: setFilters + push akan ditimpa
+                        // sinkronisasi URL halaman ini (router.replace).
+                        const query = filtersToSearchParams({
+                          ...filters,
+                          topics: [partition.topic_slug],
+                          job_roles: [partition.job_role],
+                        });
+                        router.push(`/post?${query}`);
+                      }}
+                      onFilter={() =>
+                        setFilters({
+                          topics: [partition.topic_slug],
+                          job_roles: [partition.job_role],
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+                {data.partitions.length > PARTITION_PREVIEW && (
+                  <button
+                    type="button"
+                    className="tp-btn mt-3"
+                    aria-expanded={showAllPartitions}
+                    onClick={() => setShowAllPartitions((value) => !value)}
+                  >
+                    {showAllPartitions
+                      ? "Tampilkan lebih sedikit"
+                      : `Tampilkan semua (${data.partitions.length} kombinasi)`}
+                  </button>
+                )}
+              </>
+            )}
+          </Card>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card

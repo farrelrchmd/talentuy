@@ -9,6 +9,7 @@ from app.timeutil import utcnow
 from app.connectors.base import RawPost
 from app.models import IngestionRun, Post, PostAnalysis, Topic
 from app.nlp.pipeline import pipeline
+from app.privacy import anonymize_post_url, hash_author_id
 
 
 def topic_id_map(db: Session) -> dict[str, str]:
@@ -34,6 +35,7 @@ def analyze_and_attach(db: Session, post: Post, topics: dict[str, str]) -> PostA
     analysis.relevance_score = result.relevance_score
     analysis.engagement_score = result.engagement_score
     analysis.keywords = result.keywords
+    analysis.explanation = result.explanation
     analysis.model_version = result.model_version
     analysis.needs_review = result.needs_review
     analysis.analyzed_at = utcnow()
@@ -83,12 +85,13 @@ def ingest_posts(
                 text=raw.text,
                 created_at_source=raw.created_at_source,
                 language=raw.language,
-                author_public_id=raw.author_public_id,
+                # Semua connector melewati titik ini: username tidak pernah disimpan.
+                author_public_id=hash_author_id(raw.author_public_id),
                 like_count=raw.like_count,
                 repost_count=raw.repost_count,
                 reply_count=raw.reply_count,
                 quote_count=raw.quote_count,
-                url=raw.url,
+                url=anonymize_post_url(raw.url),
                 is_synthetic=raw.is_synthetic,
                 ingested_at=utcnow(),
             )

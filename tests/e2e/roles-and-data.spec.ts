@@ -37,8 +37,8 @@ test("viewer hanya dapat membaca, tanpa aksi yang mengubah data", async ({ page 
     "Total post",
   );
 
-  // Pemantauan: tidak ada tombol membuat monitor baru.
-  await openPage(page, "Pemantauan Tersimpan");
+  // monitoring: tidak ada tombol membuat monitor baru.
+  await openPage(page, "Monitoring");
   await expect(page.getByRole("button", { name: "Monitor baru" })).toHaveCount(0);
 });
 

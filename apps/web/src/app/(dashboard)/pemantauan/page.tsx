@@ -118,8 +118,8 @@ export default function MonitoringPage() {
   return (
     <>
       <PageHeader
-        title="Pemantauan Tersimpan"
-        subtitle="Query yang disimpan untuk diikuti perkembangannya. Perbandingan dihitung ulang setiap halaman dibuka — bukan pemantauan real-time."
+        title="Monitoring"
+        subtitle="Query yang disimpan untuk diikuti perkembangannya. Perbandingan dihitung ulang setiap halaman dibuka — bukan monitoring real-time."
         actions={
           canEdit && (
             <button
@@ -230,7 +230,7 @@ export default function MonitoringPage() {
                   className="text-xs font-medium text-primary hover:underline"
                   onClick={() => {
                     setFilters({ query_id: monitor.source_query.id });
-                    router.push("/ringkasan");
+                    router.push("/");
                   }}
                 >
                   Buka di dashboard

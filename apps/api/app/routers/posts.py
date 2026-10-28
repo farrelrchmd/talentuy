@@ -50,6 +50,7 @@ def _to_post_out(row, *, show_confidence: bool) -> PostOut:
         relevance_score=round(analysis.relevance_score, 3),
         needs_review=analysis.needs_review,
         keywords=analysis.keywords or [],
+        explanation=analysis.explanation or {},
         sentiment_confidence=analysis.sentiment_confidence if show_confidence else None,
         intent_confidence=analysis.intent_confidence if show_confidence else None,
         model_version=analysis.model_version if show_confidence else None,

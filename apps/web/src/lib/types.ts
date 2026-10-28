@@ -163,8 +163,21 @@ export interface KeywordGraph {
   edges: Array<{ source: string; target: string; weight: number }>;
 }
 
+/** Satu kartu kombinasi kategori isu x jenis pekerjaan. */
+export interface TopicRolePartition {
+  topic_slug: string;
+  topic_name: string;
+  color: string;
+  job_role: string;
+  count: number;
+  questions: number;
+  share: number;
+  negative_share: number;
+}
+
 export interface TopicsResponse {
   topics: TopicRow[];
+  partitions: TopicRolePartition[];
   total_posts: number;
   related_keywords: KeywordGraph;
   questions: QuestionItem[];
@@ -182,6 +195,16 @@ export interface TopicDetailResponse {
   questions: QuestionItem[];
   suggested_summary: string;
   meta: ResponseMeta;
+}
+
+export type LabelField = "topic" | "sentiment" | "intent" | "job_role";
+
+/** Dasar penetapan satu label: aturan yang terpicu dan kata pemicunya. */
+export interface LabelExplanation {
+  rule: string;
+  triggers: string[];
+  corrected: boolean;
+  auto_rule: string;
 }
 
 export interface Post {
@@ -206,6 +229,7 @@ export interface Post {
   relevance_score: number;
   needs_review: boolean;
   keywords: string[];
+  explanation: Partial<Record<LabelField, LabelExplanation>>;
   sentiment_confidence: number | null;
   intent_confidence: number | null;
   model_version: string | null;
@@ -299,9 +323,20 @@ export interface TopicMeta {
   is_active: boolean;
 }
 
+export interface KeywordPreset {
+  id: string;
+  topic_slug: string;
+  topic_name: string;
+  label: string;
+  query_text: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
 export interface TaxonomyResponse {
   topics: TopicMeta[];
   job_roles: string[];
+  job_role_codes: Record<string, string>;
   intents: string[];
   sentiments: string[];
   languages: string[];
@@ -317,6 +352,7 @@ export interface ConnectorStatus {
 }
 
 export interface ConnectorsResponse {
+  provider: "official" | "twitterapi_io";
   mode: "demo" | "live";
   requested_mode: string;
   live_available: boolean;

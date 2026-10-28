@@ -79,3 +79,11 @@ describe("filter global", () => {
     expect(toggleArrayValue(["a"], "b")).toEqual(["a", "b"]);
   });
 });
+
+it("preserves data source filtering in URLs, API requests and active chips", () => {
+  const filters = filtersFromSearchParams(new URLSearchParams("data_type=twitterapi_io"));
+  expect(filtersToSearchParams(filters).get("data_type")).toBe("twitterapi_io");
+  expect(filtersToApiParams(filters).data_type).toBe("twitterapi_io");
+  expect(activeFilterChips(filters)).toContainEqual({ key: "data_type", value: "twitterapi_io", label: "twitterapi.io saja" });
+  expect(filtersFromSearchParams(new URLSearchParams("data_type=invalid")).data_type).toBeUndefined();
+});

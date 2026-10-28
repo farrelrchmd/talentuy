@@ -57,12 +57,12 @@ test("Tugas 3 — membandingkan sentimen antar jenis pekerjaan", async ({ page }
 
   await sentimentCard.getByRole("button", { name: "Lihat sebagai tabel" }).click();
   const table = sentimentCard.locator("table");
-  await expect(table).toContainText("Admin");
-  await expect(table).toContainText("Sales Promotion Girl/Boy");
+  await expect(table).toContainText("Administrasi");
+  await expect(table).toContainText("SPG/SPB");
 });
 
 test("Tugas 4 — menyimpan monitor penipuan lowongan", async ({ page }) => {
-  await openPage(page, "Pemantauan Tersimpan");
+  await openPage(page, "Monitoring");
   await page.getByRole("button", { name: "Monitor baru" }).click();
 
   const name = `Penipuan Lowongan ${Date.now()}`;

@@ -15,9 +15,12 @@ import type {
   ImportResult,
   IngestionRun,
   Insight,
+  KeywordPreset,
+  LabelField,
   MethodologyResponse,
   Monitor,
   OverviewResponse,
+  Post,
   PostListResponse,
   Report,
   ReportPreview,
@@ -138,6 +141,14 @@ export function useTaxonomy() {
   return useQuery({
     queryKey: ["taxonomy"],
     queryFn: () => apiRequest<TaxonomyResponse>("/data/taxonomy"),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useKeywordPresets() {
+  return useQuery({
+    queryKey: ["keyword-presets"],
+    queryFn: () => apiRequest<KeywordPreset[]>("/data/keyword-presets"),
     staleTime: 5 * 60_000,
   });
 }
@@ -305,8 +316,24 @@ export function useImportData() {
   });
 }
 
+export function useImportPublicX() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (url: string) =>
+      apiRequest<ImportResult>("/data/import-public-x", {
+        method: "POST",
+        body: { url },
+      }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["ingestion-runs"] });
+      client.invalidateQueries({ queryKey: ["data-quality"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
 /**
- * Tarik post nyata melalui connector X API resmi. Token tidak pernah menyentuh
+ * Tarik post nyata melalui provider X terpilih. Token tidak pernah menyentuh
  * browser — permintaan hanya memicu proses di server.
  */
 export function useFetchLive() {
@@ -342,6 +369,65 @@ export function useUpdateTopic() {
       apiRequest(`/data/topics/${id}`, { method: "PATCH", body }),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["taxonomy"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
+export function useSaveKeywordPreset() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id?: string; body: Record<string, unknown> }) =>
+      id
+        ? apiRequest<KeywordPreset>(`/data/keyword-presets/${id}`, { method: "PATCH", body })
+        : apiRequest<KeywordPreset>("/data/keyword-presets", { method: "POST", body }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["keyword-presets"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
+export function useDeleteKeywordPreset() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiRequest<void>(`/data/keyword-presets/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["keyword-presets"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
+/** Koreksi label (admin). Mengembalikan post terbaru beserta dasar klasifikasinya. */
+export function useCorrectLabels() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ postId, body }: { postId: string; body: Record<string, unknown> }) => {
+      await apiRequest(`/posts/${postId}/labels`, { method: "PATCH", body });
+      return apiRequest<Post>(`/posts/${postId}`);
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["posts"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
+/** Usulan koreksi (analis): menandai post perlu ditinjau admin. */
+export function useSuggestLabel() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      postId,
+      body,
+    }: {
+      postId: string;
+      body: { field: LabelField; suggested_label: string; note?: string };
+    }) => apiRequest(`/posts/${postId}/label-suggestions`, { method: "POST", body }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["posts"] });
       client.invalidateQueries({ queryKey: ["audit"] });
     },
   });

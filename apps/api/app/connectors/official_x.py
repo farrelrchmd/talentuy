@@ -97,5 +97,14 @@ class OfficialXApiConnector(SocialDataConnector):
 def available_connectors() -> list[SocialDataConnector]:
     from app.connectors.csv_import import CsvImportConnector
     from app.connectors.mock_x import MockXConnector
+    from app.connectors.x_public_embed import XPublicEmbedConnector
 
-    return [MockXConnector(), CsvImportConnector(), OfficialXApiConnector()]
+    from app.connectors.twitterapi_io import TwitterApiIoConnector
+
+    return [
+        TwitterApiIoConnector(),
+        MockXConnector(),
+        CsvImportConnector(),
+        XPublicEmbedConnector(),
+        OfficialXApiConnector(),
+    ]

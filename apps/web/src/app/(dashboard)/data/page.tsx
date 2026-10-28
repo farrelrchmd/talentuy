@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CircleSlash,
   Database,
+  Link2,
   Palette,
   RefreshCw,
   Satellite,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { KeywordPresetManager } from "@/components/keyword-preset-manager";
 import { PageHeader } from "@/components/shell";
 import {
   Card,
@@ -30,6 +32,7 @@ import {
   useDataQuality,
   useFetchLive,
   useImportData,
+  useImportPublicX,
   useIngestionRuns,
   useReanalyze,
   useSeedDemoData,
@@ -58,11 +61,16 @@ const RUN_STATUS_STYLE: Record<string, string> = {
 
 const ACTION_LABEL: Record<string, string> = {
   "data.import": "Impor berkas",
+  "data.import_public_x": "Impor URL post X",
   "data.seed": "Bangkitkan data demo",
   "data.reanalyze": "Analisis ulang",
   "data.fetch_live": "Tarik data X API",
   "taxonomy.update": "Ubah taxonomy",
   "label.correct": "Koreksi label",
+  "label.suggest": "Usulan koreksi label",
+  "preset.create": "Tambah preset kata kunci",
+  "preset.update": "Ubah preset kata kunci",
+  "preset.delete": "Hapus preset kata kunci",
   "insight.create": "Buat insight",
   "insight.update": "Ubah insight",
   "insight.delete": "Hapus insight",
@@ -100,6 +108,7 @@ export default function DataSettingsPage() {
   const audit = useAuditLog(isAdmin);
 
   const importData = useImportData();
+  const importPublicX = useImportPublicX();
   const fetchLive = useFetchLive();
   const reanalyze = useReanalyze();
   const seedDemo = useSeedDemoData();
@@ -129,9 +138,12 @@ export default function DataSettingsPage() {
 
   const [liveQuery, setLiveQuery] = useState("");
   const [liveDays, setLiveDays] = useState(7);
-  const [liveMax, setLiveMax] = useState(100);
+  const [liveMax, setLiveMax] = useState(20);
   const [liveError, setLiveError] = useState<string | null>(null);
   const [liveResult, setLiveResult] = useState<ImportResult | null>(null);
+  const [publicXUrl, setPublicXUrl] = useState("");
+  const [publicXError, setPublicXError] = useState<string | null>(null);
+  const [publicXResult, setPublicXResult] = useState<ImportResult | null>(null);
 
   const [branding, setBranding] = useState<Branding>(DEFAULT_BRANDING);
   const [brandError, setBrandError] = useState<string | null>(null);
@@ -191,6 +203,31 @@ export default function DataSettingsPage() {
     } catch (caught) {
       setLiveError(
         caught instanceof ApiError ? caught.userMessage : "Penarikan data gagal.",
+      );
+    }
+  };
+
+  const submitPublicX = async (event: FormEvent) => {
+    event.preventDefault();
+    setPublicXError(null);
+    setPublicXResult(null);
+    if (!/^https:\/\/(?:www\.)?(?:x\.com|twitter\.com)\/.+\/status\/\d+/.test(publicXUrl.trim())) {
+      setPublicXError("Masukkan URL post X yang lengkap.");
+      return;
+    }
+    try {
+      const result = await importPublicX.mutateAsync(publicXUrl.trim());
+      setPublicXResult(result);
+      setToast({
+        message:
+          result.records_processed > 0
+            ? "Post X nyata berhasil disimpan dan dianalisis."
+            : "Post tersebut sudah pernah disimpan.",
+        tone: "success",
+      });
+    } catch (caught) {
+      setPublicXError(
+        caught instanceof ApiError ? caught.userMessage : "Post X tidak dapat diimpor.",
       );
     }
   };
@@ -291,7 +328,7 @@ export default function DataSettingsPage() {
         {/* --------------------------------------------------- connector */}
         <Card
           title="Status sumber data"
-          description="Mode demo memakai data sintetis. Mode live hanya aktif bila connector resmi tersedia pada server."
+          description="Mode demo memakai data sintetis. Mode live tersedia bila credential provider terpilih sudah diatur pada server."
         >
           {connectors.isError ? (
             <ErrorState
@@ -354,15 +391,62 @@ export default function DataSettingsPage() {
 
               {isAdmin && (
                 <form
+                  onSubmit={submitPublicX}
+                  className="space-y-2.5 rounded-lg border border-line p-3"
+                  noValidate
+                >
+                  <p className="text-sm font-medium text-ink">Impor satu post X publik</p>
+                  <p className="text-[11px] leading-relaxed text-muted">
+                    Tempel URL post yang sudah diketahui. Teks publik diambil di server,
+                    disimpan sebagai data nyata, lalu dianalisis oleh pipeline aktif.
+                  </p>
+                  <div>
+                    <label htmlFor="public-x-url" className="tp-label">
+                      URL post X
+                    </label>
+                    <input
+                      id="public-x-url"
+                      type="url"
+                      className="tp-input"
+                      value={publicXUrl}
+                      onChange={(event) => setPublicXUrl(event.target.value)}
+                      placeholder="https://x.com/nama/status/123456789"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="tp-btn tp-btn-primary"
+                    disabled={importPublicX.isPending}
+                  >
+                    <Link2 className="h-4 w-4" aria-hidden />
+                    {importPublicX.isPending ? "Mengambil post…" : "Impor dari URL"}
+                  </button>
+                  {publicXError && (
+                    <p role="alert" className="rounded-lg border border-negative/20 bg-negative/5 px-3 py-2 text-xs text-negative-strong">
+                      {publicXError}
+                    </p>
+                  )}
+                  {publicXResult && (
+                    <p className="rounded-lg border border-line bg-surface-muted px-3 py-2 text-xs text-ink">
+                      {publicXResult.records_processed > 0
+                        ? "1 post baru tersimpan sebagai data nyata dan sudah dianalisis."
+                        : "Post sudah ada; data duplikat tidak dibuat."}
+                    </p>
+                  )}
+                </form>
+              )}
+
+              {isAdmin && (
+                <form
                   onSubmit={submitFetchLive}
                   className="space-y-2.5 rounded-lg border border-line p-3"
                   noValidate
                 >
-                  <p className="text-sm font-medium text-ink">Tarik data dari X API</p>
+                  <p className="text-sm font-medium text-ink">Tarik data X melalui {connectors.data.provider === "twitterapi_io" ? "twitterapi.io" : "X API resmi"}</p>
                   <p className="text-[11px] leading-relaxed text-muted">
-                    Permintaan dijalankan di server memakai token yang tersimpan di
-                    environment. Endpoint pencarian resmi hanya menjangkau 7 hari
-                    terakhir, maksimal 100 post per permintaan.
+                    Ambil post dalam 7 hari terakhir, maksimal 100 post per pencarian.
+                    Untuk twitterapi.io, mulai dari 20 post (maksimal satu halaman).
+                    Setiap pencarian memakai kredit provider; hasil bisa lebih sedikit dari batas yang dipilih.
                   </p>
 
                   <div>
@@ -409,7 +493,7 @@ export default function DataSettingsPage() {
                         onChange={(event) => setLiveMax(Number(event.target.value))}
                         disabled={!connectors.data.live_available}
                       >
-                        {[10, 50, 100].map((size) => (
+                        {[20, 50, 100].map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
@@ -429,7 +513,7 @@ export default function DataSettingsPage() {
 
                   {!connectors.data.live_available && (
                     <p className="rounded-lg border border-warning/25 bg-warning/5 px-3 py-2 text-[11px] leading-relaxed text-ink">
-                      Connector belum aktif. Isi <code>X_API_BEARER_TOKEN</code> pada
+                      Connector belum aktif. Pilih <code>X_API_PROVIDER</code> dan isi <code>TWITTERAPI_IO_KEY</code> atau <code>X_API_BEARER_TOKEN</code> pada
                       environment server lalu jalankan ulang backend. Selama itu belum
                       tersedia, gunakan impor CSV/JSON di bawah — hasilnya masuk lewat
                       pipeline yang sama.
@@ -670,6 +754,13 @@ export default function DataSettingsPage() {
             </ul>
           )}
         </Card>
+
+        {/* ------------------------------------------------ preset kata kunci */}
+        <KeywordPresetManager
+          isAdmin={isAdmin}
+          topics={taxonomy.data?.topics ?? []}
+          onToast={setToast}
+        />
 
         {/* ------------------------------------------------- kamus istilah */}
         <Card
@@ -1072,6 +1163,7 @@ export default function DataSettingsPage() {
       />
 
       {(importData.isPending ||
+        importPublicX.isPending ||
         seedDemo.isPending ||
         reanalyze.isPending ||
         fetchLive.isPending) && (

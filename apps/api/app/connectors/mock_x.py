@@ -16,15 +16,11 @@ from app.taxonomy import JOB_ROLES
 
 # Frasa peran seperti yang biasa ditulis pencari kerja di media sosial.
 ROLE_PHRASES: dict[str, list[str]] = {
-    "Sales Promotion Girl/Boy": ["SPG", "SPB", "spg event", "sales promotion", "spg mall"],
-    "Merchandiser": ["merchandiser", "MD toko", "merchandiser display", "merchandiser minimarket"],
-    "Admin": ["admin gudang", "staff admin", "admin data entry", "admin kantor"],
+    "SPG/SPB": ["SPG", "SPB", "spg event", "sales promotion", "spg mall"],
     "Staf Gudang": ["staf gudang", "helper gudang", "checker gudang", "packing gudang", "picker"],
-    "Operator": ["operator produksi", "operator mesin", "operator line", "operator packing"],
-    "Security": ["security", "satpam", "sekuriti gedung"],
-    "Cleaning Service": ["cleaning service", "cleaner mall", "office boy"],
-    "Driver": ["driver", "sopir box", "driver kurir", "supir operasional"],
-    "Supervisor Lapangan": ["supervisor lapangan", "SPV area", "koordinator lapangan"],
+    "Kasir": ["kasir", "kasir minimarket", "kasir supermarket", "kasir toko"],
+    "Administrasi": ["staff admin", "admin data entry", "admin kantor", "staf administrasi"],
+    "Pengemudi": ["driver", "sopir box", "driver kurir", "supir operasional", "pengemudi"],
     "Lainnya": ["kerjaan ini", "posisi ini", "lowongan ini"],
 }
 
@@ -278,14 +274,10 @@ class MockXConnector(SocialDataConnector):
         # Distribusi peran sengaja tidak merata agar mirip kondisi nyata.
         weighted = (
             ["Staf Gudang"] * 5
-            + ["Sales Promotion Girl/Boy"] * 4
-            + ["Admin"] * 4
-            + ["Operator"] * 3
-            + ["Driver"] * 3
-            + ["Security"] * 2
-            + ["Merchandiser"] * 2
-            + ["Cleaning Service"] * 2
-            + ["Supervisor Lapangan"] * 1
+            + ["SPG/SPB"] * 4
+            + ["Kasir"] * 4
+            + ["Administrasi"] * 3
+            + ["Pengemudi"] * 3
             + ["Lainnya"] * 1
         )
         role = rng.choice(weighted)

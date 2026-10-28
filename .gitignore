@@ -34,3 +34,12 @@ Thumbs.db
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Cadangan database lokal (bisa berisi data sebelum penyamaran identitas)
+*.db.bak*
+
+# Hasil ekspor data mentah (teks kiriman asli, tidak untuk repo publik)
+output/
+
+# Log crash browser
+debug.log

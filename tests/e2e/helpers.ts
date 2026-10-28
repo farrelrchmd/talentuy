@@ -36,7 +36,7 @@ export async function login(
   await page.getByLabel("Email").fill(ACCOUNTS[role]);
   await page.getByLabel("Kata sandi", { exact: true }).fill(DEMO_PASSWORD);
   await page.getByRole("button", { name: "Masuk" }).click();
-  await page.waitForURL("**/ringkasan");
+  await page.waitForURL((url) => url.pathname === "/");
   await expect(
     page.getByRole("heading", { name: "Ringkasan Percakapan Kandidat" }),
   ).toBeVisible();
@@ -44,10 +44,14 @@ export async function login(
 
 /** Centang satu nilai pada panel filter global (cross-filter seluruh halaman). */
 export async function applyFilter(page: Page, value: string): Promise<void> {
+  const openFilters = page.getByRole("button", { name: "Buka filter global" });
+  if (await openFilters.isVisible()) await openFilters.click();
   const option = page.getByRole("checkbox", { name: value, exact: true }).first();
   await option.scrollIntoViewIfNeeded();
   await option.check();
   await expect(option).toBeChecked();
+  const closeFilters = page.getByRole("dialog", { name: "Filter global" }).getByRole("button", { name: "Tutup panel detail", exact: true });
+  if (await closeFilters.isVisible()) await closeFilters.click();
   // Chip filter aktif memakai slug topik, jadi keberadaannya dicek secara umum.
   await expect(page.getByText("Filter aktif").first()).toBeVisible();
 }

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -14,12 +14,30 @@ from app.connectors.official_x import (
     OfficialXApiConnector,
     available_connectors,
 )
+from app.connectors.twitterapi_io import TwitterApiIoConnector
+from app.connectors.x_public_embed import PublicPostImportError, XPublicEmbedConnector
 from app.database import get_db
 from app.deps import get_current_user, require_admin, write_audit
 from app.ingest import ingest_posts, reanalyze_all
-from app.models import AuditLog, IngestionRun, Post, PostAnalysis, Topic, User
-from app.schemas import ImportResult, IngestionRunOut, TopicOut, TopicUpdate
-from app.taxonomy import INTENTS, JOB_ROLES, LANGUAGES, PRODUCT_LIMITATIONS, SENTIMENTS
+from app.models import AuditLog, IngestionRun, KeywordPreset, Post, PostAnalysis, Topic, User
+from app.schemas import (
+    ImportResult,
+    IngestionRunOut,
+    KeywordPresetIn,
+    KeywordPresetOut,
+    KeywordPresetUpdate,
+    PublicPostUrlIn,
+    TopicOut,
+    TopicUpdate,
+)
+from app.taxonomy import (
+    INTENTS,
+    JOB_ROLE_CODES,
+    JOB_ROLES,
+    LANGUAGES,
+    PRODUCT_LIMITATIONS,
+    SENTIMENTS,
+)
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -32,9 +50,10 @@ def connectors(_user: User = Depends(get_current_user)) -> dict:
         "mode": settings.effective_source_mode,
         "requested_mode": settings.data_source_mode,
         "live_available": settings.live_mode_available,
+        "provider": settings.x_api_provider,
         "connectors": [c.status() for c in available_connectors()],
         "notice": (
-            "Mode live hanya aktif bila X_API_BEARER_TOKEN tersedia pada environment "
+            "Pilih X_API_PROVIDER dan isi credential provider pada environment "
             "server. Token tidak pernah dikirim ke browser."
         ),
     }
@@ -46,6 +65,7 @@ def taxonomy(db: Session = Depends(get_db), _user: User = Depends(get_current_us
     return {
         "topics": [TopicOut.model_validate(t) for t in topics],
         "job_roles": JOB_ROLES,
+        "job_role_codes": JOB_ROLE_CODES,
         "intents": INTENTS,
         "sentiments": SENTIMENTS,
         "languages": LANGUAGES,
@@ -75,6 +95,102 @@ def update_topic(
     write_audit(db, user, "taxonomy.update", "topic", topic.id, changes)
     db.commit()
     return TopicOut.model_validate(topic)
+
+
+def _preset_out(preset: KeywordPreset) -> KeywordPresetOut:
+    return KeywordPresetOut(
+        id=preset.id,
+        topic_slug=preset.topic.slug,
+        topic_name=preset.topic.name,
+        label=preset.label,
+        query_text=preset.query_text,
+        sort_order=preset.sort_order,
+        is_active=preset.is_active,
+    )
+
+
+def _topic_by_slug(db: Session, slug: str) -> Topic:
+    topic = db.scalar(select(Topic).where(Topic.slug == slug))
+    if topic is None:
+        raise HTTPException(status_code=422, detail=f"Topik '{slug}' tidak dikenal.")
+    return topic
+
+
+@router.get("/keyword-presets", response_model=list[KeywordPresetOut])
+def list_keyword_presets(
+    db: Session = Depends(get_db), _user: User = Depends(get_current_user)
+) -> list[KeywordPresetOut]:
+    presets = db.scalars(
+        select(KeywordPreset)
+        .join(Topic, Topic.id == KeywordPreset.topic_id)
+        .order_by(Topic.name, KeywordPreset.sort_order, KeywordPreset.label)
+    ).all()
+    return [_preset_out(p) for p in presets]
+
+
+@router.post("/keyword-presets", response_model=KeywordPresetOut, status_code=201)
+def create_keyword_preset(
+    payload: KeywordPresetIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+) -> KeywordPresetOut:
+    topic = _topic_by_slug(db, payload.topic_slug)
+    preset = KeywordPreset(
+        topic_id=topic.id,
+        label=payload.label.strip(),
+        query_text=payload.query_text.strip(),
+        sort_order=payload.sort_order,
+        is_active=payload.is_active,
+    )
+    db.add(preset)
+    db.flush()
+    write_audit(db, user, "preset.create", "keyword_preset", preset.id, payload.model_dump())
+    db.commit()
+    db.refresh(preset)
+    return _preset_out(preset)
+
+
+@router.patch("/keyword-presets/{preset_id}", response_model=KeywordPresetOut)
+def update_keyword_preset(
+    preset_id: str,
+    payload: KeywordPresetUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+) -> KeywordPresetOut:
+    preset = db.get(KeywordPreset, preset_id)
+    if preset is None:
+        raise HTTPException(status_code=404, detail="Preset tidak ditemukan.")
+    changes = payload.model_dump(exclude_unset=True)
+    if "topic_slug" in changes:
+        preset.topic_id = _topic_by_slug(db, changes["topic_slug"]).id
+    for field in ("label", "query_text"):
+        if field in changes:
+            setattr(preset, field, changes[field].strip())
+    for field in ("sort_order", "is_active"):
+        if field in changes:
+            setattr(preset, field, changes[field])
+    write_audit(db, user, "preset.update", "keyword_preset", preset.id, changes)
+    db.commit()
+    db.refresh(preset)
+    return _preset_out(preset)
+
+
+@router.delete("/keyword-presets/{preset_id}", status_code=204)
+def delete_keyword_preset(
+    preset_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+) -> Response:
+    preset = db.get(KeywordPreset, preset_id)
+    if preset is None:
+        raise HTTPException(status_code=404, detail="Preset tidak ditemukan.")
+    write_audit(
+        db, user, "preset.delete", "keyword_preset", preset.id,
+        {"label": preset.label, "query_text": preset.query_text},
+    )
+    db.delete(preset)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/quality")
@@ -166,6 +282,44 @@ def import_file(
     )
 
 
+@router.post("/import-public-x", response_model=ImportResult)
+def import_public_x(
+    payload: PublicPostUrlIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+) -> ImportResult:
+    """Impor satu post X yang URL publiknya sudah diketahui."""
+    connector = XPublicEmbedConnector()
+    try:
+        raw_posts = connector.fetch(url=payload.url)
+    except PublicPostImportError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    run = ingest_posts(
+        db,
+        raw_posts,
+        source="x_public_embed",
+        triggered_by=user.id,
+    )
+    write_audit(
+        db,
+        user,
+        "data.import_public_x",
+        "ingestion_run",
+        run.id,
+        {"post_id": raw_posts[0].external_post_id, "processed": run.records_processed},
+    )
+    db.commit()
+    return ImportResult(
+        run_id=run.id,
+        records_received=run.records_received,
+        records_processed=run.records_processed,
+        records_failed=run.records_failed,
+        status=run.status,
+        errors=[],
+    )
+
+
 @router.post("/seed")
 def seed_demo_data(
     count: int = Query(1400, ge=100, le=5000),
@@ -200,22 +354,23 @@ def seed_demo_data(
 def fetch_live(
     query: str = Query(..., min_length=2, max_length=300),
     days: int = Query(7, ge=1, le=7, description="X API recent search hanya 7 hari terakhir."),
-    max_results: int = Query(100, ge=10, le=100),
+    max_results: int = Query(20, ge=10, le=100),
     db: Session = Depends(get_db),
     user: User = Depends(require_admin),
 ) -> ImportResult:
-    """Tarik post nyata melalui X API resmi lalu jalankan pipeline yang sama.
+    """Tarik post nyata melalui provider terpilih lalu jalankan pipeline yang sama.
 
     Token dibaca dari environment server dan tidak pernah dikirim ke browser.
     Bila credential belum tersedia, permintaan ditolak dengan pesan yang jelas
     dan aplikasi tetap dapat dipakai pada mode demo.
     """
-    connector = OfficialXApiConnector()
+    connector = (TwitterApiIoConnector() if settings.x_api_provider == "twitterapi_io"
+                 else OfficialXApiConnector())
     if not connector.is_available:
         raise HTTPException(
             status_code=409,
             detail=(
-                "Connector X API belum aktif. Isi X_API_BEARER_TOKEN pada "
+                "Connector belum aktif. Isi TWITTERAPI_IO_KEY untuk twitterapi_io atau X_API_BEARER_TOKEN untuk official pada "
                 "environment server, lalu jalankan ulang backend."
             ),
         )
@@ -228,7 +383,7 @@ def fetch_live(
     run = ingest_posts(
         db,
         raw_posts,
-        source="x_api",
+        source="twitterapi_io" if settings.x_api_provider == "twitterapi_io" else "x_api",
         triggered_by=user.id,
         records_received=len(raw_posts),
     )
@@ -239,7 +394,7 @@ def fetch_live(
         "ingestion_run",
         run.id,
         # Query pencarian dicatat sebagai jejak audit; tidak ada data pribadi.
-        {"query": query, "days": days, "processed": run.records_processed},
+        {"query": query, "days": days, "provider": settings.x_api_provider, "processed": run.records_processed},
     )
     db.commit()
 

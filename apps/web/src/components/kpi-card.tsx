@@ -38,19 +38,19 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between rounded-card border bg-surface px-4 py-3.5 transition",
-        emphasis ? "border-primary/30 shadow-card" : "border-line",
+        "tp-metric flex min-w-0 flex-col justify-between p-5",
+        emphasis ? "tp-metric-emphasis" : "bg-surface",
       )}
     >
       <div>
-        <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted">
-          <span className="truncate">{label}</span>
+        <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+          <span>{label}</span>
           <InfoTooltip label={label} text={definition} />
         </p>
         <p
           className={cn(
-            "mt-1.5 tabular font-semibold leading-tight text-ink",
-            emphasis ? "text-[28px]" : "text-2xl",
+            "mt-3 tabular font-medium leading-tight tracking-[-0.055em] text-ink",
+            emphasis ? "text-[38px]" : "text-[32px]",
           )}
         >
           {value}
@@ -72,7 +72,7 @@ export function KpiCard({
           <button
             type="button"
             onClick={onDrillDown}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary transition hover:text-primary-strong"
+            className="inline-flex items-center gap-2 text-xs font-medium text-primary transition hover:text-primary-strong"
           >
             {drillDownLabel}
             <ArrowRight className="h-3 w-3" aria-hidden />

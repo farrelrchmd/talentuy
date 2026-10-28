@@ -50,8 +50,17 @@ class PostgresSearchProvider(SearchProvider):
         return func.to_tsvector(self._config, _TARGET)
 
     def _tsquery(self, terms: list[str], operator: str):
-        joined = f" {operator} ".join(t.replace("'", " ") for t in terms)
-        return func.to_tsquery(self._config, joined)
+        queries = [
+            func.phraseto_tsquery(self._config, term)
+            for term in terms
+        ]
+        combined = queries[0]
+        sql_operator = "&&" if operator == "&" else "||"
+
+        for query in queries[1:]:
+            combined = combined.op(sql_operator)(query)
+
+        return combined
 
     def text_filter(self, parsed: ParsedQuery):
         clauses = []

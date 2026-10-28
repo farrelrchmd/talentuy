@@ -1,0 +1,37 @@
+{
+  "platform": "X",
+  "external_post_id": "1566952453937205248",
+  "source_url": "https://x.com/hrdbacot/status/1566952453937205248",
+  "publisher": "HRD BACOT (@hrdbacot)",
+  "published_date": "2022-09-06",
+  "published_date_precision": "day",
+  "retrieval_recorded_at_utc": "2026-09-18T08:02:45Z",
+  "retrieval_method": "Public oEmbed response from publish.twitter.com, fetched without login or bearer token",
+  "retrieval_url": "https://publish.twitter.com/oembed?url=https%3A%2F%2Ftwitter.com%2Fhrdbacot%2Fstatus%2F1566952453937205248&omit_script=true",
+  "retrieval_status": "success",
+  "provider_name_returned": "X",
+  "is_synthetic": false,
+  "excerpt": "tadi pertama kalinya dpt offering letter diperusahaan gataunya cuma 5jt :))) lulusan S1 5Jt?",
+  "text_completeness": "excerpt_only",
+  "manual_annotation": {
+    "perspective": "jobseeker as portrayed in the post, not verified identity of publisher",
+    "topic": "salary expectations and education",
+    "reported_offer_idr": 5000000,
+    "expected_salary_idr": null,
+    "salary_period": null,
+    "education_mentioned": "S1",
+    "sentiment": "negative toward the reported salary offer",
+    "gap_hypothesis": "The portrayed jobseeker considers the offer too low relative to their degree",
+    "quantified_salary_gap_idr": null,
+    "annotation_method": "manual interpretation; not an IndoBERT prediction"
+  },
+  "limitations": [
+    "Historical post, not a recent or realtime sample.",
+    "oEmbed may serve cached content; this proves retrieval from X's public embed service, not freshness of the underlying post.",
+    "Publisher identity does not establish who experienced the reported situation.",
+    "The reported offer and education are claims in the post, not independently verified facts.",
+    "Employer, job role, location, salary period, and expected salary are not established by this example.",
+    "No demonstrated relationship to PT Siprama/Siprima Cakrawala.",
+    "This file is evidence of one successful retrieval, not an import-ready training dataset or production scraper."
+  ]
+}

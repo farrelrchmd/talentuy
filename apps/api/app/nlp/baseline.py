@@ -17,7 +17,7 @@ from app.nlp.base import (
     SentimentAnalyzer,
     TopicClassifier,
 )
-from app.taxonomy import TOPIC_SEED
+from app.taxonomy import JOB_ROLE_FALLBACK, TOPIC_SEED
 
 MODEL_VERSION = "baseline-1.0.0"
 
@@ -121,15 +121,11 @@ _QUESTION_MARKERS = (
 )
 
 _ROLE_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "Sales Promotion Girl/Boy": ("spg", "spb", "sales promotion", "promotor", "penjaga stand"),
-    "Merchandiser": ("merchandiser", "md toko", "display produk", "mdr"),
-    "Admin": ("admin", "administrasi", "data entry", "staff admin", "admin gudang"),
+    "SPG/SPB": ("spg", "spb", "sales promotion", "promotor", "penjaga stand"),
     "Staf Gudang": ("gudang", "warehouse", "helper gudang", "checker", "packing", "picker"),
-    "Operator": ("operator", "produksi", "operator mesin", "line produksi"),
-    "Security": ("security", "satpam", "sekuriti", "gada pratama"),
-    "Cleaning Service": ("cleaning service", "cs kebersihan", "cleaner", "office boy", "ob "),
-    "Driver": ("driver", "sopir", "supir", "kurir", "sim a", "sim b"),
-    "Supervisor Lapangan": ("supervisor", "spv", "koordinator lapangan", "team leader"),
+    "Kasir": ("kasir", "cashier", "kasir minimarket", "kasir supermarket"),
+    "Administrasi": ("admin", "administrasi", "data entry", "staff admin", "admin gudang"),
+    "Pengemudi": ("pengemudi", "driver", "sopir", "supir", "kurir"),
 }
 
 _STOPWORDS = {
@@ -183,18 +179,33 @@ class LexiconSentimentAnalyzer(SentimentAnalyzer):
                 evidence.append(phrase)
 
         if "?" in text and not evidence:
-            return Label("Netral", 0.55, ["tanpa penanda sentimen kuat"])
+            return Label(
+                "Netral", 0.55, [],
+                "Kalimat tanya tanpa kata bermuatan sentimen pada leksikon, sehingga Netral.",
+            )
 
         total = pos + neg
         if total == 0:
-            return Label("Netral", 0.5, ["tanpa penanda sentimen"])
+            return Label(
+                "Netral", 0.5, [],
+                "Tidak ada kata bermuatan sentimen pada leksikon, sehingga Netral.",
+            )
 
         margin = abs(pos - neg) / total
         confidence = round(min(0.95, 0.4 + margin * 0.55 + min(len(tokens), 30) / 300), 3)
+        scores = f"skor positif {pos:.1f} dan negatif {neg:.1f}".replace(".", ",")
         if margin < 0.15 or confidence < SENTIMENT_MIN_CONFIDENCE:
-            return Label("Tidak Yakin", round(confidence, 3), evidence[:5])
+            return Label(
+                "Tidak Yakin", round(confidence, 3), evidence[:5],
+                f"Leksikon sentimen memberi {scores}; selisihnya terlalu kecil "
+                "untuk memilih satu polaritas.",
+            )
         label = "Positif" if pos > neg else "Negatif"
-        return Label(label, confidence, evidence[:5])
+        return Label(
+            label, confidence, evidence[:5],
+            f"Leksikon sentimen memberi {scores}; skor {label.lower()} lebih besar. "
+            "Kata positif yang didahului negasi dihitung sebagai negatif.",
+        )
 
     @staticmethod
     def _negated(normalized: str, phrase: str) -> bool:
@@ -213,18 +224,25 @@ class KeywordTopicClassifier(TopicClassifier):
 
     def classify(self, text: str) -> Label:
         normalized = normalize_text(text)
-        best_slug, best_score, hits = "", 0.0, []
-        for slug, _name, keywords in self._topics:
+        best_slug, best_name, best_score, hits = "", "", 0.0, []
+        for slug, name, keywords in self._topics:
             matched = [kw for kw in keywords if kw in normalized]
             if not matched:
                 continue
             score = sum(1 + len(kw.split()) * 0.5 for kw in matched)
             if score > best_score:
-                best_slug, best_score, hits = slug, score, matched
+                best_slug, best_name, best_score, hits = slug, name, score, matched
         if not best_slug:
-            return Label("", 0.0, [])
+            return Label(
+                "", 0.0, [],
+                "Tidak ada kata kunci taxonomy topik yang cocok, sehingga belum terklasifikasi.",
+            )
         confidence = round(min(0.95, 0.45 + best_score * 0.12), 3)
-        return Label(best_slug, confidence, hits[:5])
+        return Label(
+            best_slug, confidence, hits[:5],
+            f"Kata kunci taxonomy topik \"{best_name}\" paling banyak cocok "
+            f"({len(hits)} kata). Frasa lebih dari satu kata diberi bobot lebih.",
+        )
 
 
 class RuleIntentClassifier(IntentClassifier):
@@ -236,17 +254,28 @@ class RuleIntentClassifier(IntentClassifier):
         raw = text.lower()
         normalized = normalize_text(text)
 
-        question_hits = [m for m in _QUESTION_MARKERS if m in raw]
+        question_hits = [m.strip() for m in _QUESTION_MARKERS if m in raw]
         if question_hits:
             confidence = 0.9 if "?" in raw else 0.7
-            return Label("Pertanyaan", confidence, question_hits[:4])
+            return Label(
+                "Pertanyaan", confidence, question_hits[:4],
+                "Penanda pertanyaan ditemukan. Aturan ini diperiksa paling awal "
+                "karena pertanyaan paling bernilai bagi tim rekrutmen.",
+            )
 
         for label, markers, confidence in _INTENT_RULES:
             hits = [m for m in markers if m in normalized]
             if hits:
-                return Label(label, confidence, hits[:4])
+                return Label(
+                    label, confidence, hits[:4],
+                    f"Tidak ada penanda pertanyaan; kata pemicu aturan \"{label}\" "
+                    "ditemukan lebih dulu dibanding aturan lain.",
+                )
 
-        return Label("Informasi Lowongan", 0.4, [])
+        return Label(
+            "Informasi Lowongan", 0.4, [],
+            "Tidak ada aturan intensi yang terpicu, sehingga dipakai label bawaan.",
+        )
 
 
 class KeywordRoleTagger(JobRoleTagger):
@@ -254,7 +283,7 @@ class KeywordRoleTagger(JobRoleTagger):
 
     def tag(self, text: str) -> Label:
         normalized = normalize_text(text)
-        best_role, best_score, hits = "Lainnya", 0.0, []
+        best_role, best_score, hits = JOB_ROLE_FALLBACK, 0.0, []
         for role, keywords in _ROLE_KEYWORDS.items():
             matched = [kw for kw in keywords if kw.strip() in normalized]
             if not matched:
@@ -262,8 +291,17 @@ class KeywordRoleTagger(JobRoleTagger):
             score = sum(1 + len(kw.split()) * 0.5 for kw in matched)
             if score > best_score:
                 best_role, best_score, hits = role, score, matched
-        confidence = round(min(0.95, 0.5 + best_score * 0.15), 3) if hits else 0.3
-        return Label(best_role, confidence, hits[:4])
+        if not hits:
+            return Label(
+                JOB_ROLE_FALLBACK, 0.3, [],
+                "Tidak ada kata kunci dari lima jenis pekerjaan, sehingga masuk Lainnya.",
+            )
+        confidence = round(min(0.95, 0.5 + best_score * 0.15), 3)
+        return Label(
+            best_role, confidence, hits[:4],
+            f"Kata kunci jenis pekerjaan \"{best_role}\" paling banyak cocok "
+            f"({len(hits)} kata).",
+        )
 
 
 class FrequencyKeywordExtractor(KeywordExtractor):

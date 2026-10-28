@@ -52,17 +52,17 @@ Sukses bila tiga post dibuka melalui panel detail tanpa kehilangan filter.
 
 ### Tugas 3 — Membandingkan sentimen (target ≤ 3 menit)
 
-> "Bandingkan sentimen percakapan mengenai pekerjaan **admin** dan **sales
-> promotion**."
+> "Bandingkan sentimen percakapan mengenai pekerjaan **administrasi** dan
+> **SPG/SPB**."
 
 Jalur ideal: Overview → grafik sentimen per jenis pekerjaan, atau Analisis Tren
 dengan breakdown sentimen. Sukses bila peserta menyebut perbedaan porsi negatif.
 
 ### Tugas 4 — Monitoring (target ≤ 3 menit)
 
-> "Simpan pemantauan untuk **penipuan lowongan**, lalu bandingkan dua periode."
+> "Simpan monitoring untuk **penipuan lowongan**, lalu bandingkan dua periode."
 
-Jalur ideal: Pemantauan Tersimpan → Monitor baru → isi kata kunci → baca
+Jalur ideal: Monitoring → Monitor baru → isi kata kunci → baca
 perubahan 7 hari. Sukses bila monitor tersimpan dan arah tren terbaca.
 
 ### Tugas 5 — Menyusun laporan (target ≤ 5 menit)
@@ -90,20 +90,76 @@ Instrumentasi aplikasi: `POST /usability/events` menyimpan `session_key`,
 Isi pencarian, teks post, dan credential tidak pernah dikirim. Rekap tersedia di
 halaman Metodologi & Etika bagi admin.
 
-## 6. Kuesioner SUS (skala 1–5)
+## 6. Kuesioner System Usability Scale (SUS)
 
-1. Saya ingin sering memakai dashboard ini.
-2. Dashboard ini terasa lebih rumit dari yang seharusnya.
-3. Dashboard ini mudah digunakan.
-4. Saya butuh bantuan orang teknis untuk memakainya.
-5. Fungsi-fungsinya terasa menyatu dengan baik.
-6. Ada terlalu banyak hal yang tidak konsisten.
-7. Kebanyakan orang akan cepat mempelajarinya.
-8. Dashboard ini terasa merepotkan saat dipakai.
-9. Saya merasa percaya diri saat memakainya.
-10. Saya perlu belajar banyak hal dulu sebelum bisa memakainya.
+Instrumen: *System Usability Scale* (Brooke, 1996), 10 butir, skala Likert 1–5,
+dialihbahasakan ke bahasa Indonesia. Butir ganjil bernada positif, butir genap
+bernada negatif; susunan berselang-seling ini bagian dari instrumen asli dan
+**tidak boleh diubah urutannya**.
 
-Skor SUS = (jumlah kontribusi item) × 2,5. Ganjil: nilai − 1. Genap: 5 − nilai.
+### 6.1 Cara pemberian
+
+1. Berikan kuesioner **segera setelah Tugas 5**, sebelum wawancara penutup, agar
+   jawaban tidak dipengaruhi diskusi.
+2. Minta peserta menjawab cepat berdasarkan kesan pertama; jangan membahas
+   butir satu per satu.
+3. Semua butir wajib dijawab. Bila peserta ragu, minta memilih angka 3.
+4. Fasilitator tidak menjelaskan arti butir di luar teks yang tertulis.
+
+### 6.2 Lembar jawaban
+
+**Petunjuk untuk peserta:** Lingkari satu angka pada setiap pernyataan sesuai
+pengalaman Anda memakai dasbor TalentPulse barusan.
+1 = Sangat tidak setuju · 2 = Tidak setuju · 3 = Netral · 4 = Setuju · 5 = Sangat setuju
+
+| No | Pernyataan | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Saya rasa saya akan sering menggunakan dasbor ini. | ○ | ○ | ○ | ○ | ○ |
+| 2 | Saya merasa dasbor ini terlalu rumit tanpa alasan yang jelas. | ○ | ○ | ○ | ○ | ○ |
+| 3 | Saya merasa dasbor ini mudah digunakan. | ○ | ○ | ○ | ○ | ○ |
+| 4 | Saya rasa saya membutuhkan bantuan orang teknis untuk dapat menggunakan dasbor ini. | ○ | ○ | ○ | ○ | ○ |
+| 5 | Saya merasa berbagai fungsi dalam dasbor ini terpadu dengan baik. | ○ | ○ | ○ | ○ | ○ |
+| 6 | Saya merasa terlalu banyak hal yang tidak konsisten dalam dasbor ini. | ○ | ○ | ○ | ○ | ○ |
+| 7 | Saya rasa kebanyakan orang akan cepat belajar menggunakan dasbor ini. | ○ | ○ | ○ | ○ | ○ |
+| 8 | Saya merasa dasbor ini sangat merepotkan untuk digunakan. | ○ | ○ | ○ | ○ | ○ |
+| 9 | Saya merasa sangat percaya diri ketika menggunakan dasbor ini. | ○ | ○ | ○ | ○ | ○ |
+| 10 | Saya perlu mempelajari banyak hal sebelum dapat menggunakan dasbor ini. | ○ | ○ | ○ | ○ | ○ |
+
+Kode peserta: ________ Peran: ________ Tanggal: ________
+
+### 6.3 Penghitungan skor
+
+1. Butir ganjil (1, 3, 5, 7, 9): kontribusi = nilai jawaban − 1.
+2. Butir genap (2, 4, 6, 8, 10): kontribusi = 5 − nilai jawaban.
+3. Jumlahkan kesepuluh kontribusi (rentang 0–40).
+4. Skor SUS = jumlah kontribusi × 2,5 (rentang 0–100).
+
+Contoh: jawaban 4, 2, 4, 1, 4, 2, 5, 2, 4, 2 menghasilkan kontribusi
+3 + 3 + 3 + 4 + 3 + 3 + 4 + 3 + 3 + 3 = 32, sehingga skor SUS = 32 × 2,5 = **80**.
+
+Skor SUS **bukan persentase**. Laporkan skor per peserta, rata-rata, dan simpangan
+baku; dengan peserta sedikit, cantumkan juga nilai minimum dan maksimum.
+
+### 6.4 Tabel rekap
+
+| Peserta | B1 | B2 | B3 | B4 | B5 | B6 | B7 | B8 | B9 | B10 | Jumlah kontribusi | Skor SUS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P1 | | | | | | | | | | | | |
+| P2 | | | | | | | | | | | | |
+| P3 | | | | | | | | | | | | |
+| P4 | | | | | | | | | | | | |
+| P5 | | | | | | | | | | | | |
+| **Rata-rata** | | | | | | | | | | | | |
+
+Isi kolom B1–B10 dengan **nilai jawaban mentah** (1–5); kontribusi dihitung pada
+kolom "Jumlah kontribusi" sesuai aturan 6.3.
+
+### 6.5 Interpretasi
+
+Skor rata-rata ≥ 68 dibaca sebagai kebergunaan di atas rata-rata (lihat ambang
+pada bagian 8). Skor di bawah 68 tidak otomatis berarti gagal; telusuri tugas dan
+butir mana yang menurunkan skor, lalu kaitkan dengan temuan observasi dan
+wawancara penutup.
 
 ## 7. Wawancara penutup
 

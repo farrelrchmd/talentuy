@@ -67,7 +67,7 @@ TalentPulse harus memungkinkan pengguna untuk:
 3. mengidentifikasi topik, pertanyaan, dan kekhawatiran yang sering muncul;
 4. membandingkan percakapan berdasarkan jenis pekerjaan, topik, periode, dan sentimen;
 5. menemukan post yang paling relevan sebagai konteks, bukan sebagai dasar profiling individu;
-6. menyimpan query pemantauan;
+6. menyimpan query monitoring;
 7. menghasilkan ringkasan insight yang dapat ditinjau manusia;
 8. mengekspor laporan agregat untuk kebutuhan internal;
 9. mengurangi waktu dan jumlah langkah pencarian dibandingkan pencarian manual.
@@ -188,7 +188,7 @@ Jangan mengerjakan fitur tambahan sebelum seluruh fitur wajib selesai dan dapat 
 2. **Analisis Tren**
 3. **Eksplorasi Topik**
 4. **Pencarian Post**
-5. **Pemantauan Tersimpan**
+5. **Monitoring**
 6. **Laporan Insight**
 7. **Data & Pengaturan**
 
@@ -344,7 +344,7 @@ Kategori awal:
 - pagination atau virtualized list;
 - state no-result memberi saran memperluas query.
 
-### 10.6 Pemantauan Tersimpan
+### 10.6 Monitoring
 
 - daftar query tersimpan;
 - nama monitor, pemilik, keyword, filter, tanggal dibuat;

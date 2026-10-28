@@ -1,7 +1,7 @@
 """Interface connector sumber data sosial.
 
-Tidak ada implementasi scraping. Hanya data sintetis, impor berkas, dan
-X API resmi bila credential tersedia di environment server.
+Tidak ada implementasi browser scraping. Sumber yang didukung adalah data
+sintetis, impor berkas, oEmbed publik, X API resmi, dan twitterapi.io.
 """
 
 from __future__ import annotations

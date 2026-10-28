@@ -6,18 +6,32 @@ oleh admin melalui halaman Data & Pengaturan.
 
 from __future__ import annotations
 
-JOB_ROLES: list[str] = [
-    "Sales Promotion Girl/Boy",
-    "Merchandiser",
-    "Admin",
-    "Staf Gudang",
-    "Operator",
-    "Security",
-    "Cleaning Service",
-    "Driver",
-    "Supervisor Lapangan",
-    "Lainnya",
-]
+# Lima jenis pekerjaan mengikuti naskah 1.3 butir 2, ditambah "Lainnya" sebagai
+# penampung post yang tidak menyebut salah satu dari kelimanya.
+JOB_ROLE_CODES: dict[str, str] = {
+    "spg_spb": "SPG/SPB",
+    "staf_gudang": "Staf Gudang",
+    "kasir": "Kasir",
+    "administrasi": "Administrasi",
+    "pengemudi": "Pengemudi",
+}
+
+JOB_ROLE_FALLBACK = "Lainnya"
+
+JOB_ROLES: list[str] = [*JOB_ROLE_CODES.values(), JOB_ROLE_FALLBACK]
+
+# Pemetaan label lama (10 jenis pekerjaan) ke partisi baru, dipakai migration.
+LEGACY_JOB_ROLE_MAP: dict[str, str] = {
+    "Sales Promotion Girl/Boy": "SPG/SPB",
+    "Admin": "Administrasi",
+    "Driver": "Pengemudi",
+    "Staf Gudang": "Staf Gudang",
+    "Merchandiser": JOB_ROLE_FALLBACK,
+    "Operator": JOB_ROLE_FALLBACK,
+    "Security": JOB_ROLE_FALLBACK,
+    "Cleaning Service": JOB_ROLE_FALLBACK,
+    "Supervisor Lapangan": JOB_ROLE_FALLBACK,
+}
 
 INTENTS: list[str] = [
     "Pertanyaan",
@@ -137,6 +151,56 @@ TOPIC_SEED: list[tuple[str, str, str, str, list[str]]] = [
 ]
 
 TOPIC_NAMES: list[str] = [t[1] for t in TOPIC_SEED]
+
+# Preset kata kunci per kategori isu: wujud karakteristik *starting* (Ellis)
+# berupa kueri terpandu. Ini hanya isi awal; admin menyuntingnya lewat Data &
+# Pengaturan dan hasilnya tersimpan di tabel keyword_presets.
+# slug topik -> [(label, query)]
+KEYWORD_PRESET_SEED: dict[str, list[tuple[str, str]]] = {
+    "gaji-benefit": [
+        ("Gaji di bawah UMR", 'gaji OR umr OR umk OR "di bawah umr"'),
+        ("Lembur dan THR", "lembur OR thr OR overtime"),
+        ("Potongan dan slip gaji", '"slip gaji" OR dipotong OR potongan'),
+    ],
+    "kontrak-status": [
+        ("Perpanjangan kontrak", "kontrak OR perpanjangan OR pkwt"),
+        ("Outsourcing dan yayasan", 'outsourcing OR "alih daya" OR yayasan'),
+        ("Karyawan tetap", '"karyawan tetap" OR "masa percobaan" OR probation'),
+    ],
+    "lokasi-penempatan": [
+        ("Penempatan dan mutasi", "penempatan OR mutasi OR ditempatkan"),
+        ("Mess dan transport", 'mess OR transport OR "luar kota"'),
+    ],
+    "shift-jam-kerja": [
+        ("Pola shift", 'shift OR rolling OR "masuk malam"'),
+        ("Jam kerja dan libur", '"jam kerja" OR libur OR jadwal'),
+    ],
+    "persyaratan-pendidikan": [
+        ("Syarat ijazah", "ijazah OR sma OR smk OR lulusan"),
+        ("Batas usia dan fisik", '"usia maksimal" OR "tinggi badan"'),
+    ],
+    "pengalaman-keahlian": [
+        ("Fresh graduate", '"fresh graduate" OR pengalaman'),
+        ("Sertifikat dan pelatihan", "sertifikat OR forklift OR training OR pelatihan"),
+    ],
+    "proses-melamar": [
+        ("Interview dan psikotes", "interview OR wawancara OR psikotes"),
+        ("Berkas lamaran", "berkas OR cv OR lamaran"),
+        ("Menunggu pengumuman", 'pengumuman OR "nunggu kabar" OR panggilan'),
+    ],
+    "keamanan-penipuan": [
+        ("Lowongan palsu", 'penipuan OR "loker palsu" OR "lowongan palsu"'),
+        ("Diminta bayar", 'bayar OR pungli OR "biaya administrasi"'),
+    ],
+    "pengalaman-kandidat": [
+        ("Ghosting", 'ghosting OR "nunggu kabar" OR dikabari'),
+        ("Diterima atau ditolak", "diterima OR ditolak"),
+    ],
+    "reputasi-perusahaan": [
+        ("Reputasi vendor", 'vendor OR penyalur OR "perusahaan outsourcing"'),
+        ("Testimoni kerja", "testimoni OR review OR rekomendasi"),
+    ],
+}
 
 # Batasan produk yang wajib terlihat pada metodologi, laporan, dan onboarding.
 PRODUCT_LIMITATIONS: list[str] = [

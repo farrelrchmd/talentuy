@@ -195,8 +195,8 @@ export function VolumeChart({
       >
         <defs>
           <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2563eb" stopOpacity={0.28} />
-            <stop offset="100%" stopColor="#2563eb" stopOpacity={0.02} />
+            <stop offset="0%" stopColor="rgb(var(--tp-primary))" stopOpacity={0.16} />
+            <stop offset="100%" stopColor="rgb(var(--tp-primary))" stopOpacity={0.02} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#e4e7ec" vertical={false} />
@@ -238,7 +238,7 @@ export function VolumeChart({
           type="monotone"
           dataKey={dataKey}
           name={mode === "indexed" ? "Indeks (awal = 100)" : "Jumlah post"}
-          stroke="#2563eb"
+          stroke="rgb(var(--tp-primary))"
           strokeWidth={2}
           fill="url(#volumeFill)"
           activeDot={{ r: 4, cursor: "pointer" }}
@@ -566,15 +566,15 @@ export function KeywordNetwork({
             >
               <circle
                 r={position.r}
-                fill={isActive ? "#2563eb" : "#eef4ff"}
-                stroke={isActive ? "#1d4ed8" : "#bfdbfe"}
+                fill={isActive ? "rgb(var(--tp-primary))" : "rgb(var(--tp-primary-soft))"}
+                stroke={isActive ? "rgb(var(--tp-primary-strong))" : "#bfdbfe"}
                 strokeWidth={1.5}
               />
               <text
                 textAnchor="middle"
                 dy="0.34em"
                 fontSize={10}
-                fill={isActive ? "#fff" : "#1e3a8a"}
+                fill={isActive ? "#fff" : "rgb(var(--tp-primary-strong))"}
                 className="pointer-events-none select-none"
               >
                 {node.label.length > 12 ? `${node.label.slice(0, 11)}…` : node.label}
@@ -593,7 +593,7 @@ export function KeywordNetwork({
 
 /* ------------------------------------------------------------- sparkline */
 
-export function Sparkline({ data, tone = "#2563eb" }: { data: SeriesPoint[]; tone?: string }) {
+export function Sparkline({ data, tone = "rgb(var(--tp-primary))" }: { data: SeriesPoint[]; tone?: string }) {
   if (data.length === 0) return <span className="text-xs text-muted">Tidak ada data</span>;
   const counts = data.map((point) => point.count);
   const max = Math.max(...counts, 1);

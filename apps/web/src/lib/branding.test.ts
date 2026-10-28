@@ -30,6 +30,11 @@ describe("identitas dan warna merek", () => {
     expect(isValidHex("#xyz")).toBe(false);
   });
 
+  it("memigrasikan warna hijau bawaan lama ke aksen biru", () => {
+    saveBranding({ ...DEFAULT_BRANDING, primaryColor: "#2b5f48" });
+    expect(loadBranding().primaryColor).toBe("#2563eb");
+  });
+
   it("bertahan ketika penyimpanan browser berisi data rusak", () => {
     window.localStorage.setItem("talentpulse.branding", "{bukan json");
     expect(loadBranding()).toEqual(DEFAULT_BRANDING);

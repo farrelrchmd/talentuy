@@ -6,9 +6,15 @@ import {
   ExternalLink,
   Search,
   SlidersHorizontal,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
+import {
+  ClassificationBasis,
+  Highlighted,
+  LabelCorrection,
+} from "@/components/classification-basis";
 import { ActiveFilterChips } from "@/components/filter-panel";
 import { PageHeader } from "@/components/shell";
 import {
@@ -19,48 +25,21 @@ import {
   SentimentBadge,
   TableSkeleton,
   Tag,
+  Toast,
 } from "@/components/ui";
-import { usePosts } from "@/hooks/useApi";
+import { useKeywordPresets, usePosts } from "@/hooks/useApi";
 import { useAuth } from "@/hooks/useAuth";
 import { useFilters } from "@/hooks/useFilters";
 import { useReportMeta } from "@/hooks/useMeta";
 import { ApiError } from "@/lib/api";
-import { formatDateTime, formatNumber, formatPercent } from "@/lib/format";
-import type { Post } from "@/lib/types";
+import { formatDateTime, formatNumber } from "@/lib/format";
+import type { KeywordPreset, LabelField, Post } from "@/lib/types";
 
 const SORT_OPTIONS = [
   { value: "relevance", label: "Relevansi" },
   { value: "recent", label: "Terbaru" },
   { value: "engagement", label: "Engagement tertinggi" },
 ];
-
-/** Sorot kata yang cocok tanpa merusak teks asli post. */
-function Highlighted({ text, terms }: { text: string; terms: string[] }) {
-  if (terms.length === 0) return <>{text}</>;
-
-  const escaped = terms
-    .filter(Boolean)
-    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|");
-  if (!escaped) return <>{text}</>;
-
-  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
-  const lowered = terms.map((term) => term.toLowerCase());
-
-  return (
-    <>
-      {parts.map((part, index) =>
-        lowered.includes(part.toLowerCase()) ? (
-          <mark key={index} className="rounded bg-warning/25 px-0.5 text-ink">
-            {part}
-          </mark>
-        ) : (
-          <span key={index}>{part}</span>
-        ),
-      )}
-    </>
-  );
-}
 
 export default function PostExplorerPage() {
   const { can } = useAuth();
@@ -70,6 +49,12 @@ export default function PostExplorerPage() {
   const [pageSize, setPageSize] = useState(20);
   const [queryInput, setQueryInput] = useState(filters.q ?? "");
   const [activePost, setActivePost] = useState<Post | null>(null);
+  const [basisFocus, setBasisFocus] = useState<LabelField | null>(null);
+  const [correctionField, setCorrectionField] = useState<LabelField>("topic");
+  const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(
+    null,
+  );
+  const presets = useKeywordPresets();
 
   const { data, isLoading, isError, error, refetch, isFetching } = usePosts(
     apiParams,
@@ -82,9 +67,27 @@ export default function PostExplorerPage() {
   useEffect(() => setQueryInput(filters.q ?? ""), [filters.q]);
   // Kembali ke halaman pertama setiap kali kriteria berubah.
   useEffect(() => setPage(1), [apiParams, sort, pageSize]);
+  // Sorotan dasar klasifikasi selalu dimulai dari kata pencarian.
+  useEffect(() => setBasisFocus(null), [activePost?.id]);
+
+  // Preset dikelompokkan per kategori isu; admin menyuntingnya di Data & Pengaturan.
+  const presetGroups = useMemo(() => {
+    const groups = new Map<string, { name: string; items: KeywordPreset[] }>();
+    for (const preset of presets.data ?? []) {
+      if (!preset.is_active) continue;
+      const group = groups.get(preset.topic_slug) ?? { name: preset.topic_name, items: [] };
+      group.items.push(preset);
+      groups.set(preset.topic_slug, group);
+    }
+    return [...groups.values()];
+  }, [presets.data]);
 
   const showConfidence = can("analyst");
   const highlightTerms = useMemo(() => data?.highlight_terms ?? [], [data]);
+  const drawerTerms =
+    activePost && basisFocus
+      ? (activePost.explanation?.[basisFocus]?.triggers ?? [])
+      : highlightTerms;
 
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -110,7 +113,7 @@ export default function PostExplorerPage() {
       <PageHeader
         title="Pencarian Post"
         subtitle="Post ditampilkan sebagai konteks percakapan. Skor relevansi menilai kecocokan teks dengan query, bukan kualitas atau kelayakan penulisnya."
-        badge={data && <Tag tone="warning">{data.meta.is_synthetic ? "DATA DEMO" : "DATA LIVE"}</Tag>}
+        badge={data && <Tag tone="warning">{data.meta.is_synthetic ? "TERMASUK DATA DEMO" : "DATA NYATA"}</Tag>}
       />
 
       <Card
@@ -149,6 +152,46 @@ export default function PostExplorerPage() {
             </button>
           )}
         </form>
+
+        {presetGroups.length > 0 && (
+          <div className="mt-3 border-t border-line pt-3">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink">
+              <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
+              Mulai dari preset kata kunci
+            </p>
+            <div className="grid gap-x-4 gap-y-2.5 sm:grid-cols-2 xl:grid-cols-3">
+              {presetGroups.map((group) => (
+                <div key={group.name} className="min-w-0">
+                  <p className="mb-1 text-[11px] text-muted">{group.name}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((preset) => {
+                      const active = filters.q === preset.query_text;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          title={preset.query_text}
+                          aria-pressed={active}
+                          className={
+                            active
+                              ? "tp-chip border-primary bg-primary-soft text-primary"
+                              : "tp-chip transition hover:border-primary hover:text-primary"
+                          }
+                          onClick={() => {
+                            setQueryInput(preset.query_text);
+                            setFilters({ q: preset.query_text });
+                          }}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
       <ActiveFilterChips />
@@ -220,6 +263,7 @@ export default function PostExplorerPage() {
                       <Highlighted text={post.text} terms={highlightTerms} />
                     </p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
+                      <Tag tone={post.is_synthetic ? "warning" : "primary"}>{post.is_synthetic ? "DEMO" : post.source === "twitterapi_io" ? "twitterapi.io" : "DATA NYATA"}</Tag>
                       <SentimentBadge label={post.sentiment_label} />
                       <span>{post.intent_label}</span>
                       <span>{post.job_role}</span>
@@ -286,54 +330,35 @@ export default function PostExplorerPage() {
         {activePost && (
           <div className="space-y-5">
             <p className="rounded-lg border border-line bg-surface-muted px-3.5 py-3 text-[13px] leading-relaxed text-ink">
-              <Highlighted text={activePost.text} terms={highlightTerms} />
+              <Highlighted text={activePost.text} terms={drawerTerms} />
             </p>
 
-            <section>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                Label analisis
-              </h3>
-              <dl className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <dt className="text-muted">Sentimen</dt>
-                  <dd className="mt-1">
-                    <SentimentBadge label={activePost.sentiment_label} />
-                    {showConfidence && activePost.sentiment_confidence !== null && (
-                      <span className="ml-2 tabular text-muted">
-                        keyakinan {formatPercent(activePost.sentiment_confidence * 100)}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Kategori</dt>
-                  <dd className="mt-1 text-ink">
-                    {activePost.intent_label}
-                    {showConfidence && activePost.intent_confidence !== null && (
-                      <span className="ml-2 tabular text-muted">
-                        keyakinan {formatPercent(activePost.intent_confidence * 100)}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Topik</dt>
-                  <dd className="mt-1 text-ink">
-                    {activePost.topic_name ?? "Belum terklasifikasi"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Jenis pekerjaan</dt>
-                  <dd className="mt-1 text-ink">{activePost.job_role}</dd>
-                </div>
-              </dl>
-              {activePost.needs_review && (
-                <p className="mt-2 rounded-md bg-warning/10 px-2.5 py-1.5 text-[11px] text-warning-strong">
-                  Label otomatis memiliki tingkat keyakinan rendah dan perlu ditinjau
-                  manusia.
-                </p>
-              )}
-            </section>
+            <ClassificationBasis
+              post={activePost}
+              focus={basisFocus}
+              onFocus={setBasisFocus}
+              onCorrect={(field) => {
+                setCorrectionField(field);
+                document
+                  .getElementById("judul-koreksi")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              showConfidence={showConfidence}
+              canCorrect={can("analyst")}
+            />
+
+            {can("analyst") && (
+              <LabelCorrection
+                post={activePost}
+                field={correctionField}
+                onFieldChange={setCorrectionField}
+                mode={can("admin") ? "correct" : "suggest"}
+                onDone={({ message, tone, post }) => {
+                  setToast({ message, tone });
+                  if (post) setActivePost(post);
+                }}
+              />
+            )}
 
             <section>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -420,6 +445,10 @@ export default function PostExplorerPage() {
           </div>
         )}
       </Drawer>
+
+      {toast && (
+        <Toast message={toast.message} tone={toast.tone} onDismiss={() => setToast(null)} />
+      )}
     </>
   );
 }

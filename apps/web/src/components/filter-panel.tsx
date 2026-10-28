@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useQueries as useSavedQueries, useTaxonomy } from "@/hooks/useApi";
 import { useFilters } from "@/hooks/useFilters";
 import { cn } from "@/lib/cn";
-import { DATE_PRESETS } from "@/lib/filters";
+import { DATE_PRESETS, DATA_TYPE_LABELS, type DataType } from "@/lib/filters";
 
 function Section({
   title,
@@ -116,6 +116,18 @@ export function FilterPanel({ onClose }: { onClose?: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        <Section title="Sumber data" hint="Pisahkan post nyata dari data demo sintetis.">
+          <select
+            aria-label="Sumber data"
+            className="tp-input w-full"
+            value={filters.data_type ?? "all"}
+            onChange={(event) => setFilters({ data_type: event.target.value as DataType })}
+          >
+            {Object.entries(DATA_TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </Section>
         <Section title="Periode">
           <div className="mb-2 flex flex-wrap gap-1.5">
             {DATE_PRESETS.map((preset) => (
@@ -284,6 +296,10 @@ export function FilterPanel({ onClose }: { onClose?: () => void }) {
 /** Chip filter aktif — selalu terlihat di atas konten. */
 export function ActiveFilterChips() {
   const { chips, removeChip, reset } = useFilters();
+  const { data: taxonomy } = useTaxonomy();
+  const labelFor = (chip: (typeof chips)[number]) => chip.key === "topics"
+    ? `Topik: ${taxonomy?.topics.find((topic) => topic.slug === chip.value)?.name ?? chip.value}`
+    : chip.label;
   if (chips.length === 0) return null;
 
   return (
@@ -295,9 +311,9 @@ export function ActiveFilterChips() {
           type="button"
           onClick={() => removeChip(chip)}
           className="tp-chip transition hover:border-negative hover:text-negative-strong"
-          aria-label={`Hapus filter ${chip.label}`}
+          aria-label={`Hapus filter ${labelFor(chip)}`}
         >
-          {chip.label}
+          {labelFor(chip)}
           <X className="h-3 w-3" aria-hidden />
         </button>
       ))}

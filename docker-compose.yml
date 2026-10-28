@@ -33,10 +33,13 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-talentpulse}:${POSTGRES_PASSWORD:-talentpulse}@db:5432/${POSTGRES_DB:-talentpulse}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      AUTHOR_HASH_KEY: ${AUTHOR_HASH_KEY:-dev-only-insecure-author-key-change-me}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       DATA_SOURCE_MODE: ${DATA_SOURCE_MODE:-demo}
       # Token hanya dibaca di server; tidak pernah dikirim ke browser.
       X_API_BEARER_TOKEN: ${X_API_BEARER_TOKEN:-}
+      X_API_PROVIDER: ${X_API_PROVIDER:-official}
+      TWITTERAPI_IO_KEY: ${TWITTERAPI_IO_KEY:-}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-TalentPulse123!}
     ports:
       - "${API_PORT:-8000}:8000"

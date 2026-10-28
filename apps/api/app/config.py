@@ -1,6 +1,7 @@
 """Konfigurasi aplikasi. Semua secret hanya dibaca dari environment server."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,11 +20,17 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 12
 
+    # Kunci HMAC untuk menyamarkan identitas akun pada posts.author_public_id.
+    # Mengganti kunci membuat hash lama tidak cocok lagi dengan hash baru.
+    author_hash_key: str = "dev-only-insecure-author-key-change-me"
+
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
-    # Mode sumber data: "demo" (sintetis) atau "live" (X API resmi).
+    # Mode sumber data: "demo" (sintetis) atau "live" (provider X terpilih).
     data_source_mode: str = "demo"
     x_api_bearer_token: str | None = None
+    x_api_provider: Literal["official", "twitterapi_io"] = "official"
+    twitterapi_io_key: str | None = None
 
     # Bobot engagement score, dapat dikonfigurasi tanpa mengubah kode.
     engagement_weight_like: float = 1.0
@@ -43,6 +50,8 @@ class Settings(BaseSettings):
 
     @property
     def live_mode_available(self) -> bool:
+        if self.x_api_provider == "twitterapi_io":
+            return bool(self.twitterapi_io_key)
         return bool(self.x_api_bearer_token)
 
     @property

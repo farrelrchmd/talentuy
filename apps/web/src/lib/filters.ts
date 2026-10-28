@@ -8,7 +8,13 @@
 
 import { daysAgo, toIsoDate } from "@/lib/format";
 
+export type DataType = "all" | "real" | "demo" | "twitterapi_io";
+export const DATA_TYPE_LABELS: Record<DataType, string> = {
+  all: "Semua data", real: "Data nyata saja", demo: "Data demo saja", twitterapi_io: "twitterapi.io saja",
+};
+
 export interface GlobalFilters {
+  data_type?: DataType;
   date_from: string;
   date_to: string;
   query_id?: string;
@@ -63,6 +69,8 @@ export function filtersFromSearchParams(
     date_to: params.get("date_to") ?? base.date_to,
     query_id: params.get("query_id") ?? undefined,
     q: params.get("q") ?? undefined,
+    data_type: Object.prototype.hasOwnProperty.call(DATA_TYPE_LABELS, params.get("data_type") ?? "")
+      ? params.get("data_type") as DataType : undefined,
   };
 
   for (const key of ARRAY_KEYS) {
@@ -87,6 +95,7 @@ export function filtersToSearchParams(filters: GlobalFilters): URLSearchParams {
   if (filters.date_to !== base.date_to) params.set("date_to", filters.date_to);
   if (filters.query_id) params.set("query_id", filters.query_id);
   if (filters.q) params.set("q", filters.q);
+  if (filters.data_type && filters.data_type !== "all") params.set("data_type", filters.data_type);
 
   for (const key of ARRAY_KEYS) {
     filters[key].forEach((value) => params.append(key, value));
@@ -107,6 +116,7 @@ export function filtersToApiParams(
   return {
     date_from: `${filters.date_from}T00:00:00`,
     date_to: `${filters.date_to}T23:59:59`,
+    data_type: filters.data_type,
     query_id: filters.query_id,
     job_roles: filters.job_roles,
     topics: filters.topics,
@@ -128,6 +138,9 @@ export interface ActiveFilterChip {
 /** Daftar chip filter aktif; periode default tidak ditampilkan sebagai chip. */
 export function activeFilterChips(filters: GlobalFilters): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
+  if (filters.data_type && filters.data_type !== "all") {
+    chips.push({ key: "data_type", value: filters.data_type, label: DATA_TYPE_LABELS[filters.data_type] });
+  }
   if (filters.q) {
     chips.push({ key: "q", value: filters.q, label: `Pencarian: "${filters.q}"` });
   }

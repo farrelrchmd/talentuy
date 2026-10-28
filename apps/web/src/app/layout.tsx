@@ -13,8 +13,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "TalentPulse — Eksplorasi Percakapan Pencari Kerja",
-    template: "%s · TalentPulse",
+    default: "TID — Talent Intelegence Dashboard",
+    template: "%s · TID",
   },
   description:
     "Dashboard internal untuk mengeksplorasi percakapan publik pencari kerja dan mendukung komunikasi rekrutmen yang lebih jelas.",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0b1220",
+  themeColor: "#f1f6fb",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -2,10 +2,29 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from app.nlp.baseline import normalize_text
 from app.nlp.pipeline import engagement_score, pipeline
 from app.nlp.summarizer import summarizer
 from app.search.base import parse_query
+from app.connectors.x_public_embed import parse_embed_html, parse_x_post_url
+
+
+def test_parse_public_x_embed():
+    username, post_id, canonical = parse_x_post_url(
+        "https://twitter.com/hrdbacot/status/1566952453937205248?ref_src=test"
+    )
+    assert username == "hrdbacot"
+    assert post_id == "1566952453937205248"
+    assert canonical == "https://x.com/hrdbacot/status/1566952453937205248"
+
+    text, published_at = parse_embed_html(
+        '<blockquote><p lang="in">Baru dapat offering letter 5 juta.</p>'
+        '— HRD BACOT <a href="https://x.com/x/status/1">September 6, 2022</a></blockquote>'
+    )
+    assert text == "Baru dapat offering letter 5 juta."
+    assert published_at == datetime(2022, 9, 6)
 
 
 def test_parse_query_defaults_to_and():
@@ -68,8 +87,37 @@ def test_negation_flips_positive_phrase():
 
 def test_job_role_tagging():
     assert pipeline.run("lowongan helper gudang di cikarang").job_role == "Staf Gudang"
-    assert pipeline.run("dibutuhkan spg mall untuk event").job_role == "Sales Promotion Girl/Boy"
+    assert pipeline.run("dibutuhkan spg mall untuk event").job_role == "SPG/SPB"
+    assert pipeline.run("kasir minimarket shift malam").job_role == "Kasir"
+    assert pipeline.run("lowongan staff admin data entry").job_role == "Administrasi"
+    assert pipeline.run("dicari sopir box sim b").job_role == "Pengemudi"
     assert pipeline.run("cuaca hari ini cerah sekali").job_role == "Lainnya"
+
+
+def test_job_roles_follow_thesis_partition():
+    """Naskah 1.3 butir 2: lima jenis pekerjaan, ditambah penampung Lainnya."""
+    from app.taxonomy import JOB_ROLE_CODES, JOB_ROLES
+
+    assert list(JOB_ROLE_CODES) == ["spg_spb", "staf_gudang", "kasir", "administrasi", "pengemudi"]
+    assert JOB_ROLES == [*JOB_ROLE_CODES.values(), "Lainnya"]
+
+
+def test_every_label_carries_its_classification_basis():
+    result = pipeline.run("min gaji kasir di bekasi udah umr belum? kecewa sama potongannya")
+    assert set(result.explanation) == {"topic", "sentiment", "intent", "job_role"}
+    for entry in result.explanation.values():
+        assert entry["rule"]
+    assert "gaji" in result.explanation["topic"]["triggers"]
+    assert "kasir" in result.explanation["job_role"]["triggers"]
+    assert "?" in result.explanation["intent"]["triggers"]
+    assert "kecewa" in result.explanation["sentiment"]["triggers"]
+
+
+def test_fallback_labels_still_explain_themselves():
+    result = pipeline.run("cuaca hari ini cerah sekali")
+    assert result.explanation["job_role"]["triggers"] == []
+    assert "Lainnya" in result.explanation["job_role"]["rule"]
+    assert "belum terklasifikasi" in result.explanation["topic"]["rule"]
 
 
 def test_engagement_formula_uses_configured_weights():

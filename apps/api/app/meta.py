@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
+from app.models import Post
 
 from app.analytics import data_freshness
-from app.config import settings
-from app.filters import FilterSet
+from app.filters import FilterSet, filtered_query
 from app.nlp.baseline import MODEL_VERSION
 from app.schemas import ResponseMeta
 
@@ -14,7 +15,8 @@ from app.schemas import ResponseMeta
 def build_meta(db: Session, filters: FilterSet, record_count: int) -> ResponseMeta:
     freshness = data_freshness(db)
     prev_from, prev_to = filters.previous_window
-    mode = settings.effective_source_mode
+    synthetic_count = int(db.scalar(filtered_query(filters, db, func.count(Post.id)).where(Post.is_synthetic.is_(True))) or 0)
+    mode = "demo" if synthetic_count > 0 or filters.data_type == "demo" else "live"
     return ResponseMeta(
         record_count=record_count,
         period_start=filters.date_from.isoformat(),
@@ -23,7 +25,7 @@ def build_meta(db: Session, filters: FilterSet, record_count: int) -> ResponseMe
         comparison_start=prev_from.isoformat(),
         comparison_end=prev_to.isoformat(),
         data_source_mode=mode,
-        is_synthetic=mode == "demo" or freshness["synthetic_posts"] > 0,
+        is_synthetic=mode == "demo",
         last_updated=freshness["last_updated"],
         is_stale=freshness["is_stale"],
         model_version=MODEL_VERSION,

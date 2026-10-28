@@ -14,7 +14,7 @@ export default function NotFound() {
           Tautan mungkin sudah berubah. Kembali ke Overview untuk melanjutkan
           eksplorasi dengan filter yang sama.
         </p>
-        <Link href="/ringkasan" className="tp-btn tp-btn-primary mt-5 inline-flex">
+        <Link href="/" className="tp-btn tp-btn-primary mt-5 inline-flex">
           Kembali ke Overview
         </Link>
       </div>
